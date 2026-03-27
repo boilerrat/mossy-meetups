@@ -1,0 +1,10 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+generator client { provider = "prisma-client-js" }
+model User { id String @id @default(uuid()) email String @unique name String? }
+model Group { id String @id @default(uuid()) name String adminId String admin User @relation(fields: [adminId], references: [id]) }
+model Event { id String @id @default(uuid()) groupId String title String location String? mapLink String? }
+model DateOption { id String @id @default(uuid()) eventId String date DateTime event Event @relation(fields: [eventId], references: [id]) }
+model RSVP { id String @id @default(uuid()) userId String eventId String status String @default("ATTENDING") }

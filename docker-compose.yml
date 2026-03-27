@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://MossyMeetupsUser:changeme@db:5432/mossymeetups?schema=public
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: MossyMeetupsUser
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: mossymeetups
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
