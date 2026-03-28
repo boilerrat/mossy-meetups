@@ -22,6 +22,7 @@ type HomeEvent = {
   arrivalDate: string | null;
   departureDate: string | null;
   rsvpCount: number;
+  userRsvpStatus: string | null;
 };
 
 export type HomePageData = {
@@ -69,6 +70,10 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
                 rsvps: true,
               },
             },
+            rsvps: {
+              where: { userId },
+              select: { status: true },
+            },
           },
           orderBy: {
             createdAt: "desc",
@@ -104,6 +109,7 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
           arrivalDate: event.arrivalDate?.toISOString() || null,
           departureDate: event.departureDate?.toISOString() || null,
           rsvpCount: event._count.rsvps,
+          userRsvpStatus: event.rsvps[0]?.status ?? null,
         })),
       )
       .sort((left, right) => {

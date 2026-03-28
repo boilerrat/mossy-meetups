@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 
 import { authOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
+import { RSVPButton, type RSVPStatus } from "../../components/RSVPButton";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
@@ -18,12 +19,27 @@ function formatDate(value: string | null) {
 }
 
 export default function GroupPage({ group, isAdmin, userId }: Props) {
+  const [localEvents, setLocalEvents] = useState(group.events);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteState, setInviteState] = useState<{
     loading: boolean;
     error: string | null;
     sent: boolean;
   }>({ loading: false, error: null, sent: false });
+
+  function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
+    setLocalEvents((prev) =>
+      prev.map((e) =>
+        e.id === eventId
+          ? {
+              ...e,
+              userRsvpStatus: newStatus,
+              rsvpCount: hadPreviousRsvp ? e.rsvpCount : e.rsvpCount + 1,
+            }
+          : e
+      )
+    );
+  }
 
   async function handleInvite(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,11 +86,11 @@ export default function GroupPage({ group, isAdmin, userId }: Props) {
                   <p className="panel-label">Events</p>
                   <h2>{group.name} meetups</h2>
                 </div>
-                {group.events.length === 0 ? (
+                {localEvents.length === 0 ? (
                   <p className="empty-state">No events yet.</p>
                 ) : (
                   <div className="event-list">
-                    {group.events.map((event) => (
+                    {localEvents.map((event) => (
                       <article key={event.id} className="event-card">
                         <div className="event-header">
                           <div>
@@ -113,6 +129,16 @@ export default function GroupPage({ group, isAdmin, userId }: Props) {
                             Open map ↗
                           </a>
                         ) : null}
+                        <div className="card-footer">
+                          <RSVPButton
+                            eventId={event.id}
+                            initialStatus={event.userRsvpStatus as RSVPStatus | null}
+                            onStatusChange={(s, had) => handleRsvpChange(event.id, s, had)}
+                          />
+                          <Link href={`/events/${event.id}`} className="detail-link">
+                            Details →
+                          </Link>
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -345,6 +371,28 @@ export default function GroupPage({ group, isAdmin, userId }: Props) {
           margin-bottom: 10px;
         }
 
+        .card-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(243, 235, 220, 0.08);
+        }
+
+        .detail-link {
+          font-size: 0.82rem;
+          color: #c9c2b3;
+          text-decoration: none;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .detail-link:hover {
+          color: #f3ebdc;
+        }
+
         .pill {
           white-space: nowrap;
           border-radius: 999px;
@@ -493,6 +541,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       events: {
         include: {
           _count: { select: { rsvps: true } },
+          rsvps: {
+            where: { userId: session.user.id },
+            select: { status: true },
+          },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -559,6 +611,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           rsvpCount: event._count.rsvps,
           arrivalDate: event.arrivalDate?.toISOString() || null,
           departureDate: event.departureDate?.toISOString() || null,
+          userRsvpStatus: event.rsvps[0]?.status ?? null,
         })),
       },
     },

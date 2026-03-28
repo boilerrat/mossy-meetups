@@ -65,13 +65,13 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 
 ---
 
-## Phase 3 — RSVP flow
+## Phase 3 — RSVP flow ✓
 **Goal:** Members can RSVP to events. RSVP count is live on event cards.
 
-- [ ] `POST /api/rsvps` — upsert; one RSVP per user per event
-- [ ] `RSVPButton` component — ATTENDING / MAYBE / NOT_ATTENDING toggle
-- [ ] Event detail page `/events/[id]` with RSVP panel + attendee list
-- [ ] Live RSVP count on `EventCard`
+- [x] `POST /api/rsvps` — upsert; one RSVP per user per event
+- [x] `RSVPButton` component — ATTENDING / MAYBE / NOT_ATTENDING toggle
+- [x] Event detail page `/events/[id]` with RSVP panel + attendee list
+- [x] Live RSVP count on `EventCard`
 
 ---
 
@@ -121,6 +121,9 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 - [ ] WCAG AA contrast audit
 - [ ] Error boundary component
 - [ ] Custom 404 and 500 pages
+- [ ] Design SVG Logo
+- [ ] Hero Section redsign with logo and rewording. Logo on right side of hero
+
 
 ---
 

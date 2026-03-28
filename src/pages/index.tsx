@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 
 import { authOptions } from "../lib/auth";
 import { getHomePageData } from "../lib/home-data";
+import { RSVPButton, type RSVPStatus } from "../components/RSVPButton";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
@@ -66,6 +67,22 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
     loading: false,
     error: null,
   });
+
+  const [localEvents, setLocalEvents] = useState(events);
+
+  function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
+    setLocalEvents((prev) =>
+      prev.map((e) =>
+        e.id === eventId
+          ? {
+              ...e,
+              userRsvpStatus: newStatus,
+              rsvpCount: hadPreviousRsvp ? e.rsvpCount : e.rsvpCount + 1,
+            }
+          : e
+      )
+    );
+  }
 
   function openEditEvent(event: Props["events"][0]) {
     setEditingType("event");
@@ -402,12 +419,12 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 </div>
               </div>
               <div className="event-list">
-                {events.length === 0 ? (
+                {localEvents.length === 0 ? (
                   <p className="empty-state">
                     No meetups yet. Create a group first, then add your first event.
                   </p>
                 ) : (
-                  events.map((event) => (
+                  localEvents.map((event) => (
                     <article key={event.id} className="event-card">
                       <div className="event-header">
                         <div>
@@ -465,6 +482,16 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                           title={`Map for ${event.title}`}
                         />
                       ) : null}
+                      <div className="card-footer">
+                        <RSVPButton
+                          eventId={event.id}
+                          initialStatus={event.userRsvpStatus as RSVPStatus | null}
+                          onStatusChange={(s, had) => handleRsvpChange(event.id, s, had)}
+                        />
+                        <Link href={`/events/${event.id}`} className="detail-link">
+                          Details →
+                        </Link>
+                      </div>
                     </article>
                   ))
                 )}
@@ -947,6 +974,28 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           border: 0;
           border-radius: 12px;
           margin-top: 10px;
+        }
+
+        .card-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(243, 235, 220, 0.08);
+        }
+
+        .detail-link {
+          font-size: 0.82rem;
+          color: #c9c2b3;
+          text-decoration: none;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .detail-link:hover {
+          color: #f3ebdc;
         }
 
         .empty-state,
