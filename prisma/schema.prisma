@@ -2,9 +2,64 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-generator client { provider = "prisma-client-js" }
-model User { id String @id @default(uuid()) email String @unique name String? }
-model Group { id String @id @default(uuid()) name String adminId String admin User @relation(fields: [adminId], references: [id]) }
-model Event { id String @id @default(uuid()) groupId String title String location String? mapLink String? }
-model DateOption { id String @id @default(uuid()) eventId String date DateTime event Event @relation(fields: [eventId], references: [id]) }
-model RSVP { id String @id @default(uuid()) userId String eventId String status String @default("ATTENDING") }
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RSVPStatus {
+  ATTENDING
+  MAYBE
+  NOT_ATTENDING
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  groups    Group[]
+  rsvps     RSVP[]
+  createdAt DateTime @default(now())
+}
+
+model Group {
+  id        String   @id @default(uuid())
+  name      String
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  events    Event[]
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id          String       @id @default(uuid())
+  groupId     String
+  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  location    String?
+  mapLink     String?
+  dateOptions DateOption[]
+  rsvps       RSVP[]
+  createdAt   DateTime     @default(now())
+}
+
+model DateOption {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date      DateTime
+  createdAt DateTime @default(now())
+}
+
+model RSVP {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  status    RSVPStatus @default(ATTENDING)
+  createdAt DateTime   @default(now())
+
+  @@unique([userId, eventId])
+}
