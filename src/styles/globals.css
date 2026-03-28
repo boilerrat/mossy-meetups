@@ -2,19 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Global base styles shared by all pages ── */
-body {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  color: #f3ebdc;
-  min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(245, 201, 120, 0.22), transparent 30%),
-    linear-gradient(180deg, #10231d 0%, #0a1512 55%, #07100d 100%);
-  background-attachment: fixed;
+/* ── Brand tokens ──────────────────────────────────────────────────── */
+:root {
+  /* Raw palette */
+  --color-base:        #F3F6F1;
+  --color-surface:     #FFFFFF;
+  --color-text-brand:  #1A1A18;
+  --color-text-muted-brand: #5B5B58;
+  --color-pinecone:    #5B3A2E;
+  --color-forest:      #2E7D32;
+  --color-moss:        #6A9A4F;
+  --color-cta-brand:   #D97706;
+  --color-cta-hover-brand: #E4A11B;
+
+  /* Semantic tokens — dark mode as default (matches project aesthetic) */
+  --bg:             #10231d;
+  --bg-gradient:    radial-gradient(circle at top, rgba(245, 201, 120, 0.22), transparent 30%),
+                    linear-gradient(180deg, #10231d 0%, #0a1512 55%, #07100d 100%);
+  --bg-nav:         rgba(10, 21, 18, 0.7);
+  --bg-card:        rgba(13, 28, 23, 0.74);
+  --bg-input:       rgba(5, 11, 9, 0.5);
+  --text:           #f3ebdc;
+  --text-muted:     #c9c2b3;
+  --text-dim:       #8a847a;
+  --accent:         #d7b97f;
+  --accent-hover:   #f4dcb0;
+  --accent-text:    #10231d;
+  --border:         rgba(243, 235, 220, 0.12);
+  --border-strong:  rgba(243, 235, 220, 0.22);
+  --border-focus:   rgba(215, 185, 127, 0.5);
+  --shadow-card:    0 30px 60px rgba(0, 0, 0, 0.25);
+  --shadow-nav:     0 1px 0 rgba(243, 235, 220, 0.06);
+  --color-error:    #f0a090;
+  --color-success:  #7ec87e;
+
+  /* Typography */
+  --font-display: var(--font-fraunces, Georgia, "Times New Roman", serif);
+  --font-body:    var(--font-inter, system-ui, -apple-system, sans-serif);
+
+  /* Border radius */
+  --radius-card:  28px;
+  --radius-pill:  999px;
+  --radius-input: 16px;
+  --radius-sm:    10px;
 }
 
+/* ── Light theme overrides ─────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:             #F3F6F1;
+  --bg-gradient:    none;
+  --bg-nav:         rgba(243, 246, 241, 0.92);
+  --bg-card:        rgba(255, 255, 255, 0.9);
+  --bg-input:       #f8faf7;
+  --text:           #1A1A18;
+  --text-muted:     #5B5B58;
+  --text-dim:       #8a8880;
+  --accent:         #D97706;
+  --accent-hover:   #E4A11B;
+  --accent-text:    #ffffff;
+  --border:         rgba(26, 26, 24, 0.12);
+  --border-strong:  rgba(26, 26, 24, 0.22);
+  --border-focus:   rgba(217, 119, 6, 0.5);
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-nav:     0 1px 0 rgba(0, 0, 0, 0.06);
+  --color-error:    #c0392b;
+  --color-success:  #2E7D32;
+}
+
+/* ── Global base styles ────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  min-height: 100vh;
+  background: var(--bg-gradient, var(--bg));
+  background-color: var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Focus ring ────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }

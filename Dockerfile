@@ -1,4 +1,4 @@
-FROM node:18-bullseye-slim
+FROM node:20-bullseye-slim
 WORKDIR /app
 ENV NODE_OPTIONS=--dns-result-order=ipv6first
 COPY package.json package-lock.json* ./
@@ -7,4 +7,6 @@ COPY . .
 RUN npm run prisma:generate
 RUN npm run build
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 CMD ["sh", "-lc", "npx prisma migrate deploy && HOST_IP=$(hostname -i | awk '{print $1}') && npx next start -H \"$HOST_IP\" -p 3000"]

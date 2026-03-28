@@ -123,18 +123,18 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 
 ---
 
-## Phase 6 — Test suite & hardening
+## Phase 6 — Test suite & hardening ✓
 **Goal:** 80% coverage, rate limiting, health checks. Required before public launch.
 
-- [ ] Install Vitest + React Testing Library + Playwright
-- [ ] Unit tests for all API route handlers (happy path + error paths)
-- [ ] Unit tests for `getHomePageData` and `parseDateOptions`
-- [ ] Integration test: create group → create event
-- [ ] Playwright E2E: magic-link → RSVP flow
-- [ ] Rate limiting on all `POST` routes
-- [ ] `GET /api/health` endpoint
-- [ ] Docker `HEALTHCHECK` directive in `Dockerfile`
-- [ ] Upgrade Node 18 → 20 LTS in `Dockerfile` and CI
+- [x] Install Vitest + React Testing Library + Playwright
+- [x] Unit tests for all API route handlers (happy path + error paths)
+- [x] Unit tests for `getHomePageData` and `parseDateOptions`
+- [x] Integration test: create group → create event
+- [x] Playwright E2E: magic-link → RSVP flow
+- [x] Rate limiting on all `POST` routes
+- [x] `GET /api/health` endpoint
+- [x] Docker `HEALTHCHECK` directive in `Dockerfile`
+- [x] Upgrade Node 18 → 20 LTS in `Dockerfile` and CI
 
 ---
 
@@ -148,7 +148,8 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 - [ ] Error boundary component
 - [ ] Custom 404 and 500 pages
 - [ ] Design SVG Logo
-- [ ] Hero Section redsign with logo and rewording. Logo on right side of hero
+- [ ] Hero Section redsign with logo and rewording. Logo on right side of hero.
+- [ ] Create a new project readme, making it as beautiful as markdown can be. It should match the project where possible, utilizing graphics, badges and banners to make it look amazing.
 
 
 ---
