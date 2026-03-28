@@ -1,12 +1,12 @@
 import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { FormEvent, useState } from "react";
 
 import { authOptions } from "../lib/auth";
 import { getPrismaClient } from "../lib/prisma";
+import { AppShell } from "../components/AppShell";
 
 type ProfileData = {
   id: string;
@@ -58,11 +58,8 @@ export default function ProfilePage({ profile, isFirstVisit }: Props) {
   }
 
   return (
-    <>
-      <Head>
-        <title>Your profile — Mossy Meetups</title>
-      </Head>
-      <main className="shell">
+    <AppShell title={isFirstVisit ? "Set up your profile" : "Your profile"}>
+      <div className="profile-wrap">
         <div className="card">
           <p className="eyebrow">Mossy Meetups</p>
           <h1>{isFirstVisit ? "Set up your profile" : "Your profile"}</h1>
@@ -135,28 +132,12 @@ export default function ProfilePage({ profile, isFirstVisit }: Props) {
             ) : null}
           </form>
         </div>
-      </main>
+      </div>
       <style jsx>{`
-        :global(body) {
-          margin: 0;
-          font-family: Georgia, "Times New Roman", serif;
-          background: radial-gradient(circle at top, rgba(245, 201, 120, 0.22), transparent 30%),
-            linear-gradient(180deg, #10231d 0%, #0a1512 55%, #07100d 100%);
-          color: #f3ebdc;
-          min-height: 100vh;
-        }
-
-        :global(*) {
-          box-sizing: border-box;
-        }
-
-        .shell {
-          width: 100%;
-          min-height: 100vh;
-          padding: 48px 20px;
+        .profile-wrap {
           display: flex;
-          align-items: flex-start;
           justify-content: center;
+          padding: 32px 20px;
         }
 
         .card {
@@ -280,7 +261,7 @@ export default function ProfilePage({ profile, isFirstVisit }: Props) {
           color: #f3ebdc;
         }
       `}</style>
-    </>
+    </AppShell>
   );
 }
 

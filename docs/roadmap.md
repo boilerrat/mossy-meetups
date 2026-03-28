@@ -75,25 +75,57 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 
 ---
 
-## Phase 4 — WeekView & core UI
+## Phase 4 — WeekView & core UI ✓
 **Goal:** The primary day-to-day experience — a week grid of upcoming events.
 
-- [ ] Wire Tailwind (`tailwind.config.js` + `src/styles/globals.css` + import in `_app.tsx`)
-- [ ] Extract `EventCard`, `GroupCard` out of `index.tsx` into `src/components/`
-- [ ] `WeekView` — 7-column grid, events plotted by earliest `DateOption`
-- [ ] `AppShell` with `GroupSidebar` navigation
-- [ ] Mobile responsive collapse (single-column below 768px)
-- [ ] Calendar date picker modal — replace `datetime-local` inputs with a custom calendar popup
-- [ ] Google Maps embed is already wired (`mapEmbed` field + iframe render); no changes needed
+- [x] Wire Tailwind (`tailwind.config.js` + `src/styles/globals.css` + import in `_app.tsx`)
+- [x] Extract `EventCard`, `GroupCard` out of `index.tsx` into `src/components/`
+- [x] `WeekView` — 7-column grid, events plotted by `arrivalDate`
+- [x] `AppShell` with `GroupSidebar` navigation
+- [x] Mobile responsive collapse (single-column below 768px)
+- [x] Calendar date picker modal — replace `datetime-local` inputs with a custom calendar popup
+- [x] Google Maps embed is already wired (`mapEmbed` field + iframe render); no changes needed
 
 ---
 
-## Phase 5 — Date polling & calendar export
-**Goal:** The "which weekend works?" flow and calendar handoff.
+## Phase 5 — Date & location voting + calendar export
+**Goal:** Members coordinate "when and where" for TBD events. Confirmed events export to calendar.
 
-- [ ] `DatePoll` component — members vote on date options per event
-- [ ] `confirmedDateOptionId` FK on `Event` + admin confirm action
-- [ ] `GET /api/events/[id]/ics` — `.ics` download for confirmed events
+> **UX model:** Events with no `arrivalDate` are "TBD" — they surface in a separate section and
+> get a voting interface instead of a date display. Once the admin confirms a date (and optionally
+> a location), the event graduates to the Upcoming section automatically.
+
+### TBD event section (dashboard + group pages)
+- [ ] Events without `arrivalDate` appear in a **"Needs a date"** section below Upcoming Events
+- [ ] TBD event cards show a "Vote on date →" prompt linking to the event detail voting panel
+- [ ] Once `arrivalDate` is set, the event disappears from TBD and appears in Upcoming
+
+### Date voting (LettuceMeet-style availability grid)
+> Any member can propose candidate dates. Members mark which dates they can make.
+> The date with the most availability marks wins; admin confirms it.
+
+- [ ] `DateProposal` model — id, eventId, date (DateTime), createdBy (userId), votes
+- [ ] `DateVote` model — id, dateProposalId, userId; `@@unique([dateProposalId, userId])`
+- [ ] `DateVoteGrid` component — proposed dates as columns, members as rows; click cell to toggle green/grey
+- [ ] `POST /api/date-proposals` — any group member adds a candidate date to a TBD event
+- [ ] `DELETE /api/date-proposals/[id]` — proposer or admin removes a candidate
+- [ ] `POST /api/date-votes` — toggle current user's availability on a proposed date (upsert/delete)
+- [ ] Admin "Confirm date" action → writes `arrivalDate` on Event; event moves to Upcoming
+
+### Location voting (creator-defined options)
+> Creator explicitly opens a location vote by adding 2–4 candidate locations.
+> Members cast one vote each. Admin confirms the winner.
+
+- [ ] `LocationOption` model — id, eventId, name, mapLink?, mapEmbed?, createdBy (userId)
+- [ ] `LocationVote` model — id, locationOptionId, userId; `@@unique([eventId, userId])` (one vote per event)
+- [ ] `LocationPoll` component — list of options with vote bar/count; click to cast or change vote
+- [ ] `POST /api/location-options` — creator adds a candidate location (admin only)
+- [ ] `DELETE /api/location-options/[id]` — creator removes a candidate
+- [ ] `POST /api/location-votes` — upsert one vote per user per event
+- [ ] Admin "Confirm location" action → writes `location`, `mapLink`, `mapEmbed` on Event
+
+### Calendar export
+- [ ] `GET /api/events/[id]/ics` — `.ics` download for events with a confirmed `arrivalDate`
 
 ---
 

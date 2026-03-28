@@ -1,19 +1,19 @@
 import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import Head from "next/head";
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { authOptions } from "../lib/auth";
 import { getHomePageData } from "../lib/home-data";
-import { RSVPButton, type RSVPStatus } from "../components/RSVPButton";
+import { AppShell } from "../components/AppShell";
+import { EventCard, type EventCardEvent } from "../components/EventCard";
+import { GroupCard } from "../components/GroupCard";
+import { DatePicker } from "../components/DatePicker";
+import { WeekView, type WeekEvent } from "../components/WeekView";
+import type { RSVPStatus } from "../components/RSVPButton";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
-const initialGroupForm = {
-  name: "",
-};
-
+const initialGroupForm = { name: "" };
 const initialEventForm = {
   groupId: "",
   title: "",
@@ -25,22 +25,19 @@ const initialEventForm = {
   departureDate: "",
 };
 
-function formatDate(value: string | null) {
-  if (!value) {
-    return "TBD";
-  }
-
-  return new Intl.DateTimeFormat("en-CA", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-// Convert ISO string (UTC) to datetime-local input value (local time)
+// Convert UTC ISO string to datetime-local value (local time)
 function isoToDatetimeLocal(iso: string) {
   const date = new Date(iso);
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "TBD";
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 export default function Home({ databaseReady, databaseMessage, groups, events, userId }: Props) {
@@ -49,36 +46,27 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
     ...initialEventForm,
     groupId: groups[0]?.id || "",
   });
-  const [groupState, setGroupState] = useState<{ loading: boolean; error: string | null }>({
-    loading: false,
-    error: null,
-  });
-  const [eventState, setEventState] = useState<{ loading: boolean; error: string | null }>({
-    loading: false,
-    error: null,
-  });
+  const [groupState, setGroupState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
+  const [eventState, setEventState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
 
-  // Edit modal state
+  // Edit modal
   const [editingType, setEditingType] = useState<"event" | "group" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editEventForm, setEditEventForm] = useState({ ...initialEventForm });
   const [editGroupForm, setEditGroupForm] = useState({ name: "" });
-  const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({
-    loading: false,
-    error: null,
-  });
+  const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
 
+  // Local events for live RSVP count updates
   const [localEvents, setLocalEvents] = useState(events);
+
+  // Event view mode
+  const [viewMode, setViewMode] = useState<"week" | "list">("week");
 
   function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
     setLocalEvents((prev) =>
       prev.map((e) =>
         e.id === eventId
-          ? {
-              ...e,
-              userRsvpStatus: newStatus,
-              rsvpCount: hadPreviousRsvp ? e.rsvpCount : e.rsvpCount + 1,
-            }
+          ? { ...e, userRsvpStatus: newStatus, rsvpCount: hadPreviousRsvp ? e.rsvpCount : e.rsvpCount + 1 }
           : e
       )
     );
@@ -114,37 +102,30 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
 
   async function handleDeleteEvent(id: string) {
     if (!window.confirm("Delete this event? This cannot be undone.")) return;
-    const response = await fetch(`/api/events/${id}`, { method: "DELETE" });
-    if (response.ok) {
-      window.location.reload();
-    }
+    const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+    if (res.ok) window.location.reload();
   }
 
   async function handleDeleteGroup(id: string) {
     if (!window.confirm("Delete this group and all its events? This cannot be undone.")) return;
-    const response = await fetch(`/api/groups/${id}`, { method: "DELETE" });
-    if (response.ok) {
-      window.location.reload();
-    }
+    const res = await fetch(`/api/groups/${id}`, { method: "DELETE" });
+    if (res.ok) window.location.reload();
   }
 
   async function handleEditEventSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!editingId) return;
     setEditState({ loading: true, error: null });
-
-    const response = await fetch(`/api/events/${editingId}`, {
+    const res = await fetch(`/api/events/${editingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editEventForm),
     });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({ error: "Failed to save" }));
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({ error: "Failed to save" }));
       setEditState({ loading: false, error: payload.error || "Failed to save" });
       return;
     }
-
     closeModal();
     window.location.reload();
   }
@@ -153,403 +134,282 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
     e.preventDefault();
     if (!editingId) return;
     setEditState({ loading: true, error: null });
-
-    const response = await fetch(`/api/groups/${editingId}`, {
+    const res = await fetch(`/api/groups/${editingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editGroupForm),
     });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({ error: "Failed to save" }));
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({ error: "Failed to save" }));
       setEditState({ loading: false, error: payload.error || "Failed to save" });
       return;
     }
-
     closeModal();
     window.location.reload();
   }
 
-  async function handleGroupSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleGroupSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setGroupState({ loading: true, error: null });
-
-    const response = await fetch("/api/groups", {
+    const res = await fetch("/api/groups", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(groupForm),
     });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({ error: "Failed to create group" }));
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({ error: "Failed to create group" }));
       setGroupState({ loading: false, error: payload.error || "Failed to create group" });
       return;
     }
-
     setGroupForm(initialGroupForm);
     window.location.reload();
   }
 
-  async function handleEventSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleEventSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setEventState({ loading: true, error: null });
-
-    const response = await fetch("/api/events", {
+    const res = await fetch("/api/events", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(eventForm),
     });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({ error: "Failed to create event" }));
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({ error: "Failed to create event" }));
       setEventState({ loading: false, error: payload.error || "Failed to create event" });
       return;
     }
-
-    setEventForm({
-      ...initialEventForm,
-      groupId: groups[0]?.id || "",
-    });
+    setEventForm({ ...initialEventForm, groupId: groups[0]?.id || "" });
     window.location.reload();
   }
 
+  const sidebarGroups = groups.map((g) => ({ id: g.id, name: g.name }));
+
+  const scheduledEvents: WeekEvent[] = localEvents
+    .filter((e) => e.arrivalDate)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      groupName: e.groupName,
+      arrivalDate: e.arrivalDate as string,
+    }));
+
+  const nextMeetup = localEvents.find((e) => e.arrivalDate);
+
   return (
-    <>
-      <Head>
-        <title>Mossy Meetups</title>
-        <meta
-          name="description"
-          content="Plan camp meetups, coordinate date options, and keep track of RSVP activity."
-        />
-      </Head>
-      <main className="page-shell">
-        <section className="hero">
-          <p className="eyebrow">Mossy Meetups</p>
-          <h1>Start planning camp meetups instead of passing spreadsheets around.</h1>
-          <p className="lede">
-            This first slice gives you real groups, real events, and real date options backed by
-            Prisma and PostgreSQL.
-          </p>
+    <AppShell groups={sidebarGroups}>
+      {!databaseReady ? (
+        <section className="warning-card">
+          <h2>Database not ready</h2>
+          <p>Run Prisma migrations against your database and reload.</p>
+          {databaseMessage ? <pre>{databaseMessage}</pre> : null}
         </section>
+      ) : null}
 
-        {!databaseReady ? (
-          <section className="warning-card">
-            <h2>Database not ready</h2>
-            <p>
-              The UI is live, but the database query failed. Run Prisma against your configured
-              database and reload the page.
-            </p>
-            {databaseMessage ? <pre>{databaseMessage}</pre> : null}
+      {/* Stats */}
+      <section className="stats-grid">
+        <article className="stat-card">
+          <span>Groups</span>
+          <strong>{groups.length}</strong>
+        </article>
+        <article className="stat-card">
+          <span>Upcoming events</span>
+          <strong>{localEvents.length}</strong>
+        </article>
+        <article className="stat-card">
+          <span>Next meetup</span>
+          <strong>{nextMeetup ? formatDate(nextMeetup.arrivalDate) : "None scheduled"}</strong>
+        </article>
+      </section>
+
+      {/* Two-column layout */}
+      <div className="content-grid">
+        {/* Left column: create forms */}
+        <div className="stack">
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-label">Create group</p>
+                <h2>Set up a host group</h2>
+              </div>
+            </div>
+            <form className="form-grid" onSubmit={handleGroupSubmit}>
+              <label>
+                Group name
+                <input
+                  value={groupForm.name}
+                  onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Boilerhaus Camp Crew"
+                  required
+                />
+              </label>
+              {groupState.error ? <p className="form-error">{groupState.error}</p> : null}
+              <button type="submit" disabled={groupState.loading}>
+                {groupState.loading ? "Creating…" : "Create group"}
+              </button>
+            </form>
           </section>
-        ) : null}
 
-        <section className="stats-grid">
-          <article className="stat-card">
-            <span>Groups</span>
-            <strong>{groups.length}</strong>
-          </article>
-          <article className="stat-card">
-            <span>Upcoming events</span>
-            <strong>{events.length}</strong>
-          </article>
-          <article className="stat-card">
-            <span>Next meetup</span>
-            <strong>{events[0] ? formatDate(events[0].arrivalDate) : "None scheduled"}</strong>
-          </article>
-        </section>
-
-        <section className="content-grid">
-          <div className="stack">
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Create group</p>
-                  <h2>Set up a host group</h2>
-                </div>
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-label">Create event</p>
+                <h2>Schedule the next meetup</h2>
               </div>
-              <form className="form-grid" onSubmit={handleGroupSubmit}>
-                <label>
-                  Group name
-                  <input
-                    value={groupForm.name}
-                    onChange={(event) =>
-                      setGroupForm((current) => ({ ...current, name: event.target.value }))
-                    }
-                    placeholder="Boilerhaus Camp Crew"
-                    required
-                  />
-                </label>
-                {groupState.error ? <p className="form-error">{groupState.error}</p> : null}
-                <button type="submit" disabled={groupState.loading}>
-                  {groupState.loading ? "Creating group..." : "Create group"}
+            </div>
+            <form className="form-grid" onSubmit={handleEventSubmit}>
+              <label>
+                Group
+                <select
+                  value={eventForm.groupId}
+                  onChange={(e) => setEventForm((f) => ({ ...f, groupId: e.target.value }))}
+                  disabled={groups.length === 0}
+                  required
+                >
+                  <option value="">Select a group</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Event title
+                <input
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Friday campfire set"
+                  required
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Casual acoustic set and shared snacks."
+                  rows={2}
+                />
+              </label>
+              <label>
+                Location
+                <input
+                  value={eventForm.location}
+                  onChange={(e) => setEventForm((f) => ({ ...f, location: e.target.value }))}
+                  placeholder="North Grove"
+                />
+              </label>
+              <label>
+                Map link
+                <input
+                  type="url"
+                  value={eventForm.mapLink}
+                  onChange={(e) => setEventForm((f) => ({ ...f, mapLink: e.target.value }))}
+                  placeholder="https://maps.google.com/…"
+                />
+              </label>
+              <label>
+                Map embed URL
+                <input
+                  type="url"
+                  value={eventForm.mapEmbed}
+                  onChange={(e) => setEventForm((f) => ({ ...f, mapEmbed: e.target.value }))}
+                  placeholder="https://www.google.com/maps/embed?pb=…"
+                />
+                <span className="field-hint">Google Maps → Share → Embed a map → copy the src= URL</span>
+              </label>
+              <div className="date-grid">
+                <DatePicker
+                  label="Arrival"
+                  value={eventForm.arrivalDate}
+                  onChange={(v) => setEventForm((f) => ({ ...f, arrivalDate: v }))}
+                  required
+                />
+                <DatePicker
+                  label="Departure"
+                  value={eventForm.departureDate}
+                  onChange={(v) => setEventForm((f) => ({ ...f, departureDate: v }))}
+                />
+              </div>
+              {eventState.error ? <p className="form-error">{eventState.error}</p> : null}
+              <button type="submit" disabled={eventState.loading || groups.length === 0}>
+                {eventState.loading ? "Creating…" : "Create event"}
+              </button>
+            </form>
+          </section>
+        </div>
+
+        {/* Right column: events + groups */}
+        <div className="stack">
+          {/* Events panel */}
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-label">Upcoming events</p>
+                <h2>What&apos;s on the calendar</h2>
+              </div>
+              <div className="view-toggle">
+                <button
+                  type="button"
+                  className={`view-btn ${viewMode === "week" ? "view-btn--active" : ""}`}
+                  onClick={() => setViewMode("week")}
+                >
+                  Week
                 </button>
-              </form>
-            </section>
-
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Create event</p>
-                  <h2>Schedule the next meetup</h2>
-                </div>
-              </div>
-              <form className="form-grid" onSubmit={handleEventSubmit}>
-                <label>
-                  Group
-                  <select
-                    value={eventForm.groupId}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, groupId: event.target.value }))
-                    }
-                    disabled={groups.length === 0}
-                    required
-                  >
-                    <option value="">Select a group</option>
-                    {groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Event title
-                  <input
-                    value={eventForm.title}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, title: event.target.value }))
-                    }
-                    placeholder="Friday campfire set"
-                    required
-                  />
-                </label>
-                <label>
-                  Description
-                  <textarea
-                    value={eventForm.description}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, description: event.target.value }))
-                    }
-                    placeholder="Casual acoustic set and shared snacks."
-                    rows={3}
-                  />
-                </label>
-                <label>
-                  Location
-                  <input
-                    value={eventForm.location}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, location: event.target.value }))
-                    }
-                    placeholder="North Grove"
-                  />
-                </label>
-                <label>
-                  Map link
-                  <input
-                    type="url"
-                    value={eventForm.mapLink}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, mapLink: event.target.value }))
-                    }
-                    placeholder="https://maps.google.com/..."
-                  />
-                </label>
-                <label>
-                  Map embed URL
-                  <input
-                    type="url"
-                    value={eventForm.mapEmbed}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, mapEmbed: event.target.value }))
-                    }
-                    placeholder="https://www.google.com/maps/embed?pb=..."
-                  />
-                  <span className="field-hint">
-                    Google Maps → Share → Embed a map → copy the src= URL
-                  </span>
-                </label>
-                <div className="date-grid">
-                  <label>
-                    Arrival
-                    <input
-                      type="datetime-local"
-                      value={eventForm.arrivalDate}
-                      onChange={(event) =>
-                        setEventForm((current) => ({
-                          ...current,
-                          arrivalDate: event.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Departure
-                    <input
-                      type="datetime-local"
-                      value={eventForm.departureDate}
-                      onChange={(event) =>
-                        setEventForm((current) => ({
-                          ...current,
-                          departureDate: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-                {eventState.error ? <p className="form-error">{eventState.error}</p> : null}
-                <button type="submit" disabled={eventState.loading || groups.length === 0}>
-                  {eventState.loading ? "Creating event..." : "Create event"}
+                <button
+                  type="button"
+                  className={`view-btn ${viewMode === "list" ? "view-btn--active" : ""}`}
+                  onClick={() => setViewMode("list")}
+                >
+                  List
                 </button>
-              </form>
-            </section>
-          </div>
-
-          <div className="stack">
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Upcoming events</p>
-                  <h2>What people can actually RSVP to</h2>
-                </div>
               </div>
+            </div>
+
+            {localEvents.length === 0 ? (
+              <p className="empty-state">No meetups yet. Create a group first, then add your first event.</p>
+            ) : viewMode === "week" ? (
+              <WeekView events={scheduledEvents} />
+            ) : (
               <div className="event-list">
-                {localEvents.length === 0 ? (
-                  <p className="empty-state">
-                    No meetups yet. Create a group first, then add your first event.
-                  </p>
-                ) : (
-                  localEvents.map((event) => (
-                    <article key={event.id} className="event-card">
-                      <div className="event-header">
-                        <div>
-                          <p className="event-group">{event.groupName}</p>
-                          <h3>{event.title}</h3>
-                        </div>
-                        <div className="card-right">
-                          <span className="pill">{event.rsvpCount} RSVPs</span>
-                          {event.groupAdminId === userId ? (
-                            <div className="card-actions">
-                              <button
-                                className="btn-icon"
-                                onClick={() => openEditEvent(event)}
-                                aria-label="Edit event"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn-icon btn-danger"
-                                onClick={() => handleDeleteEvent(event.id)}
-                                aria-label="Delete event"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                      {event.description ? <p>{event.description}</p> : null}
-                      <dl className="event-meta">
-                        <div>
-                          <dt>Arrival</dt>
-                          <dd>{formatDate(event.arrivalDate)}</dd>
-                        </div>
-                        <div>
-                          <dt>Departure</dt>
-                          <dd>{event.departureDate ? formatDate(event.departureDate) : "TBD"}</dd>
-                        </div>
-                        <div>
-                          <dt>Location</dt>
-                          <dd>{event.location || "TBD"}</dd>
-                        </div>
-                      </dl>
-                      {event.mapLink ? (
-                        <a href={event.mapLink} target="_blank" rel="noreferrer">
-                          Open map ↗
-                        </a>
-                      ) : null}
-                      {event.mapEmbed ? (
-                        <iframe
-                          src={event.mapEmbed}
-                          className="map-embed"
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          title={`Map for ${event.title}`}
-                        />
-                      ) : null}
-                      <div className="card-footer">
-                        <RSVPButton
-                          eventId={event.id}
-                          initialStatus={event.userRsvpStatus as RSVPStatus | null}
-                          onStatusChange={(s, had) => handleRsvpChange(event.id, s, had)}
-                        />
-                        <Link href={`/events/${event.id}`} className="detail-link">
-                          Details →
-                        </Link>
-                      </div>
-                    </article>
-                  ))
-                )}
+                {localEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event as EventCardEvent}
+                    userId={userId}
+                    onEdit={() => openEditEvent(event)}
+                    onDelete={() => handleDeleteEvent(event.id)}
+                    onRsvpChange={(s, had) => handleRsvpChange(event.id, s, had)}
+                  />
+                ))}
               </div>
-            </section>
+            )}
+          </section>
 
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Groups</p>
-                  <h2>Current meetup hosts</h2>
-                </div>
+          {/* Groups panel */}
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-label">Groups</p>
+                <h2>Current meetup hosts</h2>
               </div>
+            </div>
+            {groups.length === 0 ? (
+              <p className="empty-state">No groups yet.</p>
+            ) : (
               <div className="group-list">
-                {groups.length === 0 ? (
-                  <p className="empty-state">No groups yet.</p>
-                ) : (
-                  groups.map((group) => (
-                    <article key={group.id} className="group-card">
-                      <div>
-                        <h3>
-                          <Link href={`/groups/${group.id}`} className="group-link">
-                            {group.name}
-                          </Link>
-                        </h3>
-                        <p>
-                          Hosted by {group.adminName} · {group.adminEmail}
-                        </p>
-                      </div>
-                      <div className="card-right">
-                        <span className="pill">{group.eventCount} events</span>
-                        {group.adminId === userId ? (
-                          <div className="card-actions">
-                            <button
-                              className="btn-icon"
-                              onClick={() => openEditGroup(group)}
-                              aria-label="Edit group"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="btn-icon btn-danger"
-                              onClick={() => handleDeleteGroup(group.id)}
-                              aria-label="Delete group"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))
-                )}
+                {groups.map((group) => (
+                  <GroupCard
+                    key={group.id}
+                    group={group}
+                    userId={userId}
+                    onEdit={() => openEditGroup(group)}
+                    onDelete={() => handleDeleteGroup(group.id)}
+                  />
+                ))}
               </div>
-            </section>
-          </div>
-        </section>
-      </main>
+            )}
+          </section>
+        </div>
+      </div>
 
       {/* Edit event modal */}
       {editingType === "event" && editingId !== null ? (
@@ -562,9 +422,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 Event title
                 <input
                   value={editEventForm.title}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, title: e.target.value }))
-                  }
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, title: e.target.value }))}
                   required
                 />
               </label>
@@ -572,9 +430,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 Description
                 <textarea
                   value={editEventForm.description}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, description: e.target.value }))
-                  }
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
                 />
               </label>
@@ -582,9 +438,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 Location
                 <input
                   value={editEventForm.location}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, location: e.target.value }))
-                  }
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, location: e.target.value }))}
                 />
               </label>
               <label>
@@ -592,10 +446,8 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 <input
                   type="url"
                   value={editEventForm.mapLink}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, mapLink: e.target.value }))
-                  }
-                  placeholder="https://maps.google.com/..."
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, mapLink: e.target.value }))}
+                  placeholder="https://maps.google.com/…"
                 />
               </label>
               <label>
@@ -603,45 +455,29 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                 <input
                   type="url"
                   value={editEventForm.mapEmbed}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, mapEmbed: e.target.value }))
-                  }
-                  placeholder="https://www.google.com/maps/embed?pb=..."
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, mapEmbed: e.target.value }))}
+                  placeholder="https://www.google.com/maps/embed?pb=…"
                 />
-                <span className="field-hint">
-                  Google Maps → Share → Embed a map → copy the src= URL
-                </span>
+                <span className="field-hint">Google Maps → Share → Embed a map → copy the src= URL</span>
               </label>
               <div className="date-grid">
-                <label>
-                  Arrival
-                  <input
-                    type="datetime-local"
-                    value={editEventForm.arrivalDate}
-                    onChange={(e) =>
-                      setEditEventForm((f) => ({ ...f, arrivalDate: e.target.value }))
-                    }
-                    required
-                  />
-                </label>
-                <label>
-                  Departure
-                  <input
-                    type="datetime-local"
-                    value={editEventForm.departureDate}
-                    onChange={(e) =>
-                      setEditEventForm((f) => ({ ...f, departureDate: e.target.value }))
-                    }
-                  />
-                </label>
+                <DatePicker
+                  label="Arrival"
+                  value={editEventForm.arrivalDate}
+                  onChange={(v) => setEditEventForm((f) => ({ ...f, arrivalDate: v }))}
+                  required
+                />
+                <DatePicker
+                  label="Departure"
+                  value={editEventForm.departureDate}
+                  onChange={(v) => setEditEventForm((f) => ({ ...f, departureDate: v }))}
+                />
               </div>
               {editState.error ? <p className="form-error">{editState.error}</p> : null}
               <div className="modal-actions">
+                <button type="button" className="btn-ghost" onClick={closeModal}>Cancel</button>
                 <button type="submit" disabled={editState.loading}>
-                  {editState.loading ? "Saving..." : "Save changes"}
-                </button>
-                <button type="button" className="btn-ghost" onClick={closeModal}>
-                  Cancel
+                  {editState.loading ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -654,7 +490,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <p className="panel-label">Edit group</p>
-            <h2>Update group name</h2>
+            <h2>Rename group</h2>
             <form className="form-grid" onSubmit={handleEditGroupSubmit}>
               <label>
                 Group name
@@ -666,11 +502,9 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
               </label>
               {editState.error ? <p className="form-error">{editState.error}</p> : null}
               <div className="modal-actions">
+                <button type="button" className="btn-ghost" onClick={closeModal}>Cancel</button>
                 <button type="submit" disabled={editState.loading}>
-                  {editState.loading ? "Saving..." : "Save changes"}
-                </button>
-                <button type="button" className="btn-ghost" onClick={closeModal}>
-                  Cancel
+                  {editState.loading ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -679,74 +513,12 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
       ) : null}
 
       <style jsx>{`
-        :global(body) {
-          margin: 0;
-          font-family: Georgia, "Times New Roman", serif;
-          background:
-            radial-gradient(circle at top, rgba(245, 201, 120, 0.22), transparent 30%),
-            linear-gradient(180deg, #10231d 0%, #0a1512 55%, #07100d 100%);
-          color: #f3ebdc;
-        }
-
-        :global(*) {
-          box-sizing: border-box;
-        }
-
-        .page-shell {
-          min-height: 100vh;
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 48px 20px 64px;
-        }
-
-        .hero {
-          max-width: 780px;
-          margin-bottom: 32px;
-        }
-
-        .eyebrow,
-        .panel-label,
-        .event-group {
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          font-size: 0.78rem;
-          color: #d7b97f;
-        }
-
-        h1 {
-          margin: 12px 0 16px;
-          font-size: clamp(2.5rem, 6vw, 5.2rem);
-          line-height: 0.96;
-          max-width: 10ch;
-        }
-
-        h2,
-        h3,
-        p {
-          margin-top: 0;
-        }
-
-        .lede {
-          max-width: 62ch;
-          color: #d4d0c7;
-          font-size: 1.05rem;
-        }
-
-        .warning-card,
-        .stat-card,
-        .panel,
-        .event-card,
-        .group-card {
-          border: 1px solid rgba(243, 235, 220, 0.12);
-          background: rgba(13, 28, 23, 0.74);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-          backdrop-filter: blur(10px);
-        }
-
         .warning-card {
           margin-bottom: 24px;
           padding: 20px;
-          border-color: rgba(215, 185, 127, 0.35);
+          border: 1px solid rgba(215, 185, 127, 0.35);
+          border-radius: 20px;
+          background: rgba(13, 28, 23, 0.74);
         }
 
         .warning-card pre {
@@ -757,19 +529,18 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           border-radius: 12px;
         }
 
-        .stats-grid,
-        .content-grid,
-        .date-grid {
-          display: grid;
-          gap: 16px;
-        }
-
         .stats-grid {
+          display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
           margin-bottom: 24px;
         }
 
         .stat-card {
+          border: 1px solid rgba(243, 235, 220, 0.12);
+          background: rgba(13, 28, 23, 0.74);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+          backdrop-filter: blur(10px);
           border-radius: 20px;
           padding: 20px;
         }
@@ -778,6 +549,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           display: block;
           color: #c9c2b3;
           margin-bottom: 8px;
+          font-size: 0.88rem;
         }
 
         .stat-card strong {
@@ -785,7 +557,9 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
         }
 
         .content-grid {
-          grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+          gap: 16px;
           align-items: start;
         }
 
@@ -795,6 +569,10 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
         }
 
         .panel {
+          border: 1px solid rgba(243, 235, 220, 0.12);
+          background: rgba(13, 28, 23, 0.74);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+          backdrop-filter: blur(10px);
           border-radius: 28px;
           padding: 24px;
         }
@@ -805,6 +583,47 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           align-items: flex-start;
           gap: 12px;
           margin-bottom: 18px;
+        }
+
+        .panel-label {
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-size: 0.78rem;
+          color: #d7b97f;
+          margin: 0 0 6px;
+        }
+
+        h2 {
+          margin: 0;
+          font-size: 1.2rem;
+        }
+
+        .view-toggle {
+          display: flex;
+          gap: 4px;
+          flex-shrink: 0;
+        }
+
+        .view-btn {
+          font-family: inherit;
+          font-size: 0.78rem;
+          padding: 5px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(243, 235, 220, 0.2);
+          background: transparent;
+          color: #c9c2b3;
+          cursor: pointer;
+        }
+
+        .view-btn:hover {
+          border-color: rgba(243, 235, 220, 0.4);
+          color: #f3ebdc;
+        }
+
+        .view-btn--active {
+          background: rgba(215, 185, 127, 0.2);
+          border-color: #d7b97f;
+          color: #f4dcb0;
         }
 
         .form-grid {
@@ -847,7 +666,8 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           resize: vertical;
         }
 
-        button {
+        button[type="submit"],
+        button[type="button"]:not(.view-btn):not(.btn-ghost) {
           border: 0;
           border-radius: 999px;
           padding: 14px 18px;
@@ -855,6 +675,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           color: #10231d;
           font-weight: 700;
           cursor: pointer;
+          width: 100%;
         }
 
         button:disabled {
@@ -867,6 +688,10 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           border: 1px solid rgba(243, 235, 220, 0.2);
           color: #c9c2b3;
           font-weight: 400;
+          padding: 14px 18px;
+          border-radius: 999px;
+          cursor: pointer;
+          width: 100%;
         }
 
         .btn-ghost:hover {
@@ -874,146 +699,28 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           color: #f3ebdc;
         }
 
-        .btn-icon {
-          background: rgba(243, 235, 220, 0.08);
-          color: #c9c2b3;
-          font-size: 0.78rem;
-          font-weight: 400;
-          padding: 5px 10px;
-          border-radius: 999px;
-        }
-
-        .btn-icon:hover {
-          background: rgba(243, 235, 220, 0.14);
-          color: #f3ebdc;
-        }
-
-        .btn-danger {
-          color: #f0a090;
-        }
-
-        .btn-danger:hover {
-          background: rgba(240, 100, 80, 0.15);
-          color: #f4c4b8;
-        }
-
         .date-grid {
+          display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
         }
 
         .event-list,
         .group-list {
           display: grid;
-          gap: 14px;
-        }
-
-        .event-card,
-        .group-card {
-          border-radius: 20px;
-          padding: 18px;
-        }
-
-        .event-header {
-          display: flex;
-          justify-content: space-between;
           gap: 12px;
-          align-items: flex-start;
-          margin-bottom: 10px;
         }
 
-        .group-card {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: flex-start;
-        }
-
-        .card-right {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-
-        .card-actions {
-          display: flex;
-          gap: 6px;
-        }
-
-        .pill {
-          white-space: nowrap;
-          border-radius: 999px;
-          padding: 6px 10px;
-          background: rgba(215, 185, 127, 0.15);
-          color: #f4dcb0;
-          font-size: 0.82rem;
-        }
-
-        .event-meta {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-          margin: 14px 0;
-        }
-
-        .event-meta dt {
-          color: #c9c2b3;
-          font-size: 0.82rem;
-          margin-bottom: 4px;
-        }
-
-        .event-meta dd {
+        .empty-state {
+          color: #8a847a;
           margin: 0;
+          font-size: 0.9rem;
         }
 
-        .map-embed {
-          display: block;
-          width: 100%;
-          height: 200px;
-          border: 0;
-          border-radius: 12px;
-          margin-top: 10px;
-        }
-
-        .card-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(243, 235, 220, 0.08);
-        }
-
-        .detail-link {
-          font-size: 0.82rem;
-          color: #c9c2b3;
-          text-decoration: none;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        .detail-link:hover {
-          color: #f3ebdc;
-        }
-
-        .empty-state,
         .form-error {
-          color: #f0d3a5;
-        }
-
-        a {
-          color: #f4dcb0;
-        }
-
-        .group-link {
-          color: #f3ebdc;
-          text-decoration: none;
-        }
-
-        .group-link:hover {
-          color: #d7b97f;
+          color: #f0a090;
+          margin: 0;
+          font-size: 0.9rem;
         }
 
         /* Modal */
@@ -1051,41 +758,32 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
           gap: 10px;
         }
 
-        @media (max-width: 960px) {
-          .stats-grid,
-          .content-grid,
-          .date-grid,
-          .event-meta,
-          .modal-actions {
+        @media (max-width: 1024px) {
+          .content-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .stats-grid {
             grid-template-columns: 1fr;
           }
 
-          .event-meta {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+          .date-grid,
+          .modal-actions {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
-    </>
+    </AppShell>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) {
-    return { redirect: { destination: "/login", permanent: false } };
-  }
-
-  if (!session.user.name) {
-    return { redirect: { destination: "/profile", permanent: false } };
-  }
+  if (!session) return { redirect: { destination: "/login", permanent: false } };
+  if (!session.user.name) return { redirect: { destination: "/profile", permanent: false } };
 
   const data = await getHomePageData(session.user.id);
-
-  return {
-    props: {
-      ...data,
-      userId: session.user.id,
-    },
-  };
+  return { props: { ...data, userId: session.user.id } };
 };

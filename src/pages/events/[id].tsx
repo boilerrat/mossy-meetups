@@ -1,12 +1,12 @@
 import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 
 import { authOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
 import { RSVPButton, type RSVPStatus } from "../../components/RSVPButton";
+import { AppShell } from "../../components/AppShell";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<RSVPStatus, string> = {
   NOT_ATTENDING: "Can't make it",
 };
 
-export default function EventPage({ event, userId, userRsvpStatus }: Props) {
+export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups }: Props) {
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus | null>(
     userRsvpStatus as RSVPStatus | null
   );
@@ -43,17 +43,12 @@ export default function EventPage({ event, userId, userRsvpStatus }: Props) {
   const notGoing = attendees.filter((a) => a.status === "NOT_ATTENDING");
 
   return (
-    <>
-      <Head>
-        <title>{event.title} — Mossy Meetups</title>
-      </Head>
-      <main className="shell">
-        <div className="page">
-          <nav className="breadcrumb">
-            <Link href={`/groups/${event.groupId}`}>← {event.groupName}</Link>
-          </nav>
+    <AppShell title={event.title} groups={sidebarGroups}>
+      <nav className="breadcrumb">
+        <Link href={`/groups/${event.groupId}`}>← {event.groupName}</Link>
+      </nav>
 
-          <div className="layout">
+      <div className="layout">
             <div className="main-col">
               {/* Event details */}
               <article className="panel">
@@ -177,33 +172,8 @@ export default function EventPage({ event, userId, userRsvpStatus }: Props) {
               </section>
             </aside>
           </div>
-        </div>
-      </main>
 
       <style jsx>{`
-        :global(body) {
-          margin: 0;
-          font-family: Georgia, "Times New Roman", serif;
-          background: radial-gradient(circle at top, rgba(245, 201, 120, 0.22), transparent 30%),
-            linear-gradient(180deg, #10231d 0%, #0a1512 55%, #07100d 100%);
-          color: #f3ebdc;
-          min-height: 100vh;
-        }
-
-        :global(*) {
-          box-sizing: border-box;
-        }
-
-        .shell {
-          min-height: 100vh;
-          padding: 40px 20px 64px;
-        }
-
-        .page {
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-
         .breadcrumb {
           margin-bottom: 24px;
         }
@@ -386,7 +356,7 @@ export default function EventPage({ event, userId, userRsvpStatus }: Props) {
           }
         }
       `}</style>
-    </>
+    </AppShell>
   );
 }
 
@@ -403,26 +373,38 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { redirect: { destination: "/", permanent: false } };
   }
 
-  const event = await prisma.event.findUnique({
-    where: { id },
-    include: {
-      group: {
-        include: {
-          invites: {
-            where: { userId: session.user.id, usedAt: { not: null } },
+  const [event, userGroups] = await Promise.all([
+    prisma.event.findUnique({
+      where: { id },
+      include: {
+        group: {
+          include: {
+            invites: {
+              where: { userId: session.user.id, usedAt: { not: null } },
+            },
           },
         },
-      },
-      rsvps: {
-        include: {
-          user: {
-            select: { id: true, name: true, email: true, hometown: true },
+        rsvps: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, hometown: true },
+            },
           },
+          orderBy: { createdAt: "asc" },
         },
-        orderBy: { createdAt: "asc" },
       },
-    },
-  });
+    }),
+    prisma.group.findMany({
+      where: {
+        OR: [
+          { adminId: session.user.id },
+          { invites: { some: { userId: session.user.id, usedAt: { not: null } } } },
+        ],
+      },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   if (!event) {
     return { redirect: { destination: "/", permanent: false } };
@@ -439,6 +421,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   return {
     props: {
+      sidebarGroups: userGroups,
       userId: session.user.id,
       userRsvpStatus: userRsvp?.status ?? null,
       event: {
