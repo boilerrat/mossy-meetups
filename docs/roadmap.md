@@ -88,7 +88,7 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 
 ---
 
-## Phase 5 — Date & location voting + calendar export
+## Phase 5 — Date & location voting + calendar export ✓
 **Goal:** Members coordinate "when and where" for TBD events. Confirmed events export to calendar.
 
 > **UX model:** Events with no `arrivalDate` are "TBD" — they surface in a separate section and
@@ -96,36 +96,30 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 > a location), the event graduates to the Upcoming section automatically.
 
 ### TBD event section (dashboard + group pages)
-- [ ] Events without `arrivalDate` appear in a **"Needs a date"** section below Upcoming Events
-- [ ] TBD event cards show a "Vote on date →" prompt linking to the event detail voting panel
-- [ ] Once `arrivalDate` is set, the event disappears from TBD and appears in Upcoming
+- [x] Events without `arrivalDate` appear in a **"Needs a date"** section below Upcoming Events
+- [x] TBD event cards show a "Vote on date →" prompt linking to the event detail voting panel
+- [x] Once `arrivalDate` is set, the event disappears from TBD and appears in Upcoming
 
 ### Date voting (LettuceMeet-style availability grid)
-> Any member can propose candidate dates. Members mark which dates they can make.
-> The date with the most availability marks wins; admin confirms it.
-
-- [ ] `DateProposal` model — id, eventId, date (DateTime), createdBy (userId), votes
-- [ ] `DateVote` model — id, dateProposalId, userId; `@@unique([dateProposalId, userId])`
-- [ ] `DateVoteGrid` component — proposed dates as columns, members as rows; click cell to toggle green/grey
-- [ ] `POST /api/date-proposals` — any group member adds a candidate date to a TBD event
-- [ ] `DELETE /api/date-proposals/[id]` — proposer or admin removes a candidate
-- [ ] `POST /api/date-votes` — toggle current user's availability on a proposed date (upsert/delete)
-- [ ] Admin "Confirm date" action → writes `arrivalDate` on Event; event moves to Upcoming
+- [x] `DateProposal` model — id, eventId, date (DateTime), createdBy (userId), votes
+- [x] `DateVote` model — id, dateProposalId, userId; `@@unique([dateProposalId, userId])`
+- [x] `DateVoteGrid` component — proposed dates as columns, members as rows; click cell to toggle green/grey
+- [x] `POST /api/date-proposals` — any group member adds a candidate date to a TBD event
+- [x] `DELETE /api/date-proposals/[id]` — proposer or admin removes a candidate
+- [x] `POST /api/date-votes` — toggle current user's availability on a proposed date (delete-first pattern)
+- [x] Admin "Confirm date" action → writes `arrivalDate` on Event; event moves to Upcoming
 
 ### Location voting (creator-defined options)
-> Creator explicitly opens a location vote by adding 2–4 candidate locations.
-> Members cast one vote each. Admin confirms the winner.
-
-- [ ] `LocationOption` model — id, eventId, name, mapLink?, mapEmbed?, createdBy (userId)
-- [ ] `LocationVote` model — id, locationOptionId, userId; `@@unique([eventId, userId])` (one vote per event)
-- [ ] `LocationPoll` component — list of options with vote bar/count; click to cast or change vote
-- [ ] `POST /api/location-options` — creator adds a candidate location (admin only)
-- [ ] `DELETE /api/location-options/[id]` — creator removes a candidate
-- [ ] `POST /api/location-votes` — upsert one vote per user per event
-- [ ] Admin "Confirm location" action → writes `location`, `mapLink`, `mapEmbed` on Event
+- [x] `LocationOption` model — id, eventId, name, mapLink?, mapEmbed?, createdBy (userId)
+- [x] `LocationVote` model — id, locationOptionId, userId; `@@unique([eventId, userId])` (one vote per event)
+- [x] `LocationPoll` component — list of options with vote bar/count; click to cast or change vote
+- [x] `POST /api/location-options` — creator adds a candidate location (admin only, max 4)
+- [x] `DELETE /api/location-options/[id]` — creator removes a candidate
+- [x] `POST /api/location-votes` — upsert one vote per user per event
+- [x] Admin "Confirm location" action → writes `location`, `mapLink`, `mapEmbed` on Event
 
 ### Calendar export
-- [ ] `GET /api/events/[id]/ics` — `.ics` download for events with a confirmed `arrivalDate`
+- [x] `GET /api/events/[id]/ics` — `.ics` download for events with a confirmed `arrivalDate`
 
 ---
 

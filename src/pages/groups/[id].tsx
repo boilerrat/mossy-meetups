@@ -6,12 +6,14 @@ import { authOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
 import { AppShell } from "../../components/AppShell";
 import { EventCard, type EventCardEvent } from "../../components/EventCard";
+import { TbdEventCard, type TbdEventCardEvent } from "../../components/TbdEventCard";
 import type { RSVPStatus } from "../../components/RSVPButton";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Props) {
-  const [localEvents, setLocalEvents] = useState(group.events);
+  const [localEvents, setLocalEvents] = useState(group.events.filter((e) => e.arrivalDate !== null));
+  const tbdEvents = group.events.filter((e) => e.arrivalDate === null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteState, setInviteState] = useState<{ loading: boolean; error: string | null; sent: boolean }>(
     { loading: false, error: null, sent: false }
@@ -62,19 +64,36 @@ export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Pro
                 <h2>{group.name} meetups</h2>
               </div>
             </div>
-            {localEvents.length === 0 ? (
+            {localEvents.length === 0 && tbdEvents.length === 0 ? (
               <p className="empty-state">No events yet.</p>
             ) : (
-              <div className="event-list">
-                {localEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event as EventCardEvent}
-                    userId={userId}
-                    onRsvpChange={(s, had) => handleRsvpChange(event.id, s, had)}
-                  />
-                ))}
-              </div>
+              <>
+                {localEvents.length > 0 ? (
+                  <div className="event-list">
+                    {localEvents.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event as EventCardEvent}
+                        userId={userId}
+                        onRsvpChange={(s, had) => handleRsvpChange(event.id, s, had)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {tbdEvents.length > 0 ? (
+                  <div className="tbd-section">
+                    <p className="tbd-section-label">Needs a date</p>
+                    <div className="event-list">
+                      {tbdEvents.map((event) => (
+                        <TbdEventCard
+                          key={event.id}
+                          event={event as TbdEventCardEvent}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </>
             )}
           </section>
         </div>
@@ -239,6 +258,20 @@ export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Pro
           margin: 0 0 6px;
         }
 
+        .tbd-section {
+          margin-top: 16px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .tbd-section-label {
+          font-size: 0.72rem;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #f0c864;
+          margin: 0;
+        }
+
         .event-list {
           display: grid;
           gap: 12px;
@@ -375,7 +408,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         admin: true,
         events: {
           include: {
-            _count: { select: { rsvps: true } },
+            _count: { select: { rsvps: true, dateProposals: true, locationOptions: true } },
             rsvps: {
               where: { userId: session.user.id },
               select: { status: true },
@@ -451,6 +484,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           arrivalDate: event.arrivalDate?.toISOString() || null,
           departureDate: event.departureDate?.toISOString() || null,
           userRsvpStatus: event.rsvps[0]?.status ?? null,
+          dateProposalCount: event._count.dateProposals,
+          locationOptionCount: event._count.locationOptions,
         })),
       },
     },

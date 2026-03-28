@@ -1,12 +1,15 @@
 import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
 
 import { authOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
 import { RSVPButton, type RSVPStatus } from "../../components/RSVPButton";
 import { AppShell } from "../../components/AppShell";
+import { DateVoteGrid, type DateProposalData, type MemberData } from "../../components/DateVoteGrid";
+import { LocationPoll, type LocationOptionData } from "../../components/LocationPoll";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
@@ -24,7 +27,18 @@ const STATUS_LABELS: Record<RSVPStatus, string> = {
   NOT_ATTENDING: "Can't make it",
 };
 
-export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups }: Props) {
+export default function EventPage({
+  event,
+  userId,
+  userRsvpStatus,
+  isAdmin,
+  dateProposals,
+  locationOptions,
+  userLocationVoteId,
+  members,
+  sidebarGroups,
+}: Props) {
+  const router = useRouter();
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus | null>(
     userRsvpStatus as RSVPStatus | null
   );
@@ -37,10 +51,15 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
     }
   }
 
+  function refreshPage() {
+    router.replace(router.asPath);
+  }
+
   const attendees = event.attendees;
   const going = attendees.filter((a) => a.status === "ATTENDING");
   const maybe = attendees.filter((a) => a.status === "MAYBE");
   const notGoing = attendees.filter((a) => a.status === "NOT_ATTENDING");
+  const isTbd = !event.arrivalDate;
 
   return (
     <AppShell title={event.title} groups={sidebarGroups}>
@@ -49,15 +68,22 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
       </nav>
 
       <div className="layout">
-            <div className="main-col">
-              {/* Event details */}
-              <article className="panel">
-                <p className="eyebrow">{event.groupName}</p>
-                <h1>{event.title}</h1>
-                {event.description ? (
-                  <p className="description">{event.description}</p>
-                ) : null}
+        <div className="main-col">
+          {/* Event details panel */}
+          <article className="panel">
+            <p className="eyebrow">{event.groupName}</p>
+            <h1>{event.title}</h1>
+            {event.description ? (
+              <p className="description">{event.description}</p>
+            ) : null}
 
+            {isTbd ? (
+              <div className="tbd-notice">
+                <span className="tbd-badge">Needs a date</span>
+                <span className="tbd-hint">Propose and vote on dates below</span>
+              </div>
+            ) : (
+              <>
                 <dl className="event-meta">
                   <div>
                     <dt>Arrival</dt>
@@ -93,85 +119,136 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
                     title={`Map for ${event.title}`}
                   />
                 ) : null}
-              </article>
 
-              {/* Who's coming */}
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Attendees</p>
-                    <h2>{rsvpCount} {rsvpCount === 1 ? "response" : "responses"}</h2>
-                  </div>
-                </div>
+                <a
+                  href={`/api/events/${event.id}/ics`}
+                  className="ics-link"
+                  download
+                >
+                  Add to calendar (.ics) ↓
+                </a>
+              </>
+            )}
+          </article>
 
-                {attendees.length === 0 ? (
-                  <p className="empty-state">No RSVPs yet. Be the first!</p>
-                ) : (
-                  <div className="attendee-groups">
-                    {going.length > 0 ? (
-                      <div className="attendee-group">
-                        <p className="group-label going">Going ({going.length})</p>
-                        <ul className="attendee-list">
-                          {going.map((a) => (
-                            <li key={a.userId} className="attendee-row">
-                              <span className="attendee-name">{a.name || a.email}</span>
-                              {a.hometown ? (
-                                <span className="attendee-detail">{a.hometown}</span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
+          {/* Date voting (TBD events only) */}
+          {isTbd ? (
+            <section className="panel">
+              <p className="eyebrow">Date voting</p>
+              <h2>When works for everyone?</h2>
+              <DateVoteGrid
+                eventId={event.id}
+                proposals={dateProposals as DateProposalData[]}
+                members={members as MemberData[]}
+                currentUserId={userId}
+                isAdmin={isAdmin}
+                onDateConfirmed={refreshPage}
+              />
+            </section>
+          ) : null}
 
-                    {maybe.length > 0 ? (
-                      <div className="attendee-group">
-                        <p className="group-label maybe">Maybe ({maybe.length})</p>
-                        <ul className="attendee-list">
-                          {maybe.map((a) => (
-                            <li key={a.userId} className="attendee-row">
-                              <span className="attendee-name">{a.name || a.email}</span>
-                              {a.hometown ? (
-                                <span className="attendee-detail">{a.hometown}</span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
+          {/* Location voting */}
+          {isTbd || locationOptions.length > 0 ? (
+            <section className="panel">
+              <p className="eyebrow">Location</p>
+              <h2>
+                {event.location
+                  ? event.location
+                  : locationOptions.length > 0
+                  ? "Vote on a location"
+                  : "Location TBD"}
+              </h2>
+              {!event.location ? (
+                <LocationPoll
+                  eventId={event.id}
+                  options={locationOptions as LocationOptionData[]}
+                  userVoteOptionId={userLocationVoteId}
+                  currentUserId={userId}
+                  isAdmin={isAdmin}
+                  totalVoters={attendees.length || 1}
+                  onLocationConfirmed={refreshPage}
+                />
+              ) : null}
+            </section>
+          ) : null}
 
-                    {notGoing.length > 0 ? (
-                      <div className="attendee-group">
-                        <p className="group-label not-going">Can&apos;t make it ({notGoing.length})</p>
-                        <ul className="attendee-list">
-                          {notGoing.map((a) => (
-                            <li key={a.userId} className="attendee-row">
-                              <span className="attendee-name">{a.name || a.email}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-              </section>
+          {/* Who's coming */}
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Attendees</p>
+                <h2>{rsvpCount} {rsvpCount === 1 ? "response" : "responses"}</h2>
+              </div>
             </div>
 
-            {/* RSVP sidebar */}
-            <aside className="side-col">
-              <section className="panel rsvp-panel">
-                <p className="eyebrow">Your RSVP</p>
-                <h2>
-                  {rsvpStatus ? STATUS_LABELS[rsvpStatus] : "Not yet responded"}
-                </h2>
-                <RSVPButton
-                  eventId={event.id}
-                  initialStatus={userRsvpStatus as RSVPStatus | null}
-                  onStatusChange={handleStatusChange}
-                />
-              </section>
-            </aside>
-          </div>
+            {attendees.length === 0 ? (
+              <p className="empty-state">No RSVPs yet. Be the first!</p>
+            ) : (
+              <div className="attendee-groups">
+                {going.length > 0 ? (
+                  <div className="attendee-group">
+                    <p className="group-label going">Going ({going.length})</p>
+                    <ul className="attendee-list">
+                      {going.map((a) => (
+                        <li key={a.userId} className="attendee-row">
+                          <span className="attendee-name">{a.name || a.email}</span>
+                          {a.hometown ? (
+                            <span className="attendee-detail">{a.hometown}</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {maybe.length > 0 ? (
+                  <div className="attendee-group">
+                    <p className="group-label maybe">Maybe ({maybe.length})</p>
+                    <ul className="attendee-list">
+                      {maybe.map((a) => (
+                        <li key={a.userId} className="attendee-row">
+                          <span className="attendee-name">{a.name || a.email}</span>
+                          {a.hometown ? (
+                            <span className="attendee-detail">{a.hometown}</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {notGoing.length > 0 ? (
+                  <div className="attendee-group">
+                    <p className="group-label not-going">Can&apos;t make it ({notGoing.length})</p>
+                    <ul className="attendee-list">
+                      {notGoing.map((a) => (
+                        <li key={a.userId} className="attendee-row">
+                          <span className="attendee-name">{a.name || a.email}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* RSVP sidebar */}
+        <aside className="side-col">
+          <section className="panel rsvp-panel">
+            <p className="eyebrow">Your RSVP</p>
+            <h2>
+              {rsvpStatus ? STATUS_LABELS[rsvpStatus] : "Not yet responded"}
+            </h2>
+            <RSVPButton
+              eventId={event.id}
+              initialStatus={userRsvpStatus as RSVPStatus | null}
+              onStatusChange={handleStatusChange}
+            />
+          </section>
+        </aside>
+      </div>
 
       <style jsx>{`
         .breadcrumb {
@@ -243,6 +320,28 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
           line-height: 1.6;
         }
 
+        .tbd-notice {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 8px 0 4px;
+        }
+
+        .tbd-badge {
+          font-size: 0.72rem;
+          padding: 3px 9px;
+          border-radius: 999px;
+          background: rgba(240, 190, 100, 0.15);
+          color: #f0c864;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .tbd-hint {
+          font-size: 0.82rem;
+          color: #8a847a;
+        }
+
         .event-meta {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -266,6 +365,18 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
           color: #f4dcb0;
           margin-bottom: 12px;
           font-size: 0.9rem;
+        }
+
+        .ics-link {
+          display: inline-block;
+          color: #c9c2b3;
+          font-size: 0.82rem;
+          margin-top: 8px;
+          text-decoration: none;
+        }
+
+        .ics-link:hover {
+          color: #f3ebdc;
         }
 
         .map-embed {
@@ -295,17 +406,9 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
           font-weight: 600;
         }
 
-        .group-label.going {
-          color: #7ec87e;
-        }
-
-        .group-label.maybe {
-          color: #d7b97f;
-        }
-
-        .group-label.not-going {
-          color: #c9c2b3;
-        }
+        .group-label.going { color: #7ec87e; }
+        .group-label.maybe { color: #d7b97f; }
+        .group-label.not-going { color: #c9c2b3; }
 
         .attendee-list {
           list-style: none;
@@ -324,9 +427,7 @@ export default function EventPage({ event, userId, userRsvpStatus, sidebarGroups
           border-radius: 10px;
         }
 
-        .attendee-name {
-          font-size: 0.95rem;
-        }
+        .attendee-name { font-size: 0.95rem; }
 
         .attendee-detail {
           font-size: 0.8rem;
@@ -379,8 +480,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       include: {
         group: {
           include: {
+            admin: { select: { id: true, name: true, email: true } },
             invites: {
-              where: { userId: session.user.id, usedAt: { not: null } },
+              where: { usedAt: { not: null } },
+              include: { user: { select: { id: true, name: true, email: true } } },
             },
           },
         },
@@ -391,6 +494,23 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             },
           },
           orderBy: { createdAt: "asc" },
+        },
+        dateProposals: {
+          include: {
+            creator: { select: { id: true, name: true, email: true } },
+            votes: { select: { userId: true } },
+          },
+          orderBy: { date: "asc" },
+        },
+        locationOptions: {
+          include: {
+            votes: { select: { userId: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        locationVotes: {
+          where: { userId: session.user.id },
+          select: { locationOptionId: true },
         },
       },
     }),
@@ -411,7 +531,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   const isAdmin = event.group.adminId === session.user.id;
-  const isMember = event.group.invites.length > 0;
+  const isMember = event.group.invites.some(
+    (inv) => inv.userId === session.user.id && inv.usedAt !== null
+  );
 
   if (!isAdmin && !isMember) {
     return { redirect: { destination: "/", permanent: false } };
@@ -419,11 +541,43 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const userRsvp = event.rsvps.find((r) => r.userId === session.user.id);
 
+  // Build member list (admin + accepted invites)
+  const members: Array<{ id: string; name: string }> = [
+    {
+      id: event.group.admin.id,
+      name: event.group.admin.name || event.group.admin.email,
+    },
+    ...event.group.invites
+      .filter((inv) => inv.user)
+      .map((inv) => ({
+        id: inv.user!.id,
+        name: inv.user!.name || inv.user!.email,
+      })),
+  ];
+
   return {
     props: {
       sidebarGroups: userGroups,
       userId: session.user.id,
+      isAdmin,
       userRsvpStatus: userRsvp?.status ?? null,
+      userLocationVoteId: event.locationVotes[0]?.locationOptionId ?? null,
+      dateProposals: event.dateProposals.map((p) => ({
+        id: p.id,
+        date: p.date.toISOString(),
+        createdBy: p.createdBy,
+        creatorName: p.creator.name || p.creator.email,
+        votes: p.votes.map((v) => ({ userId: v.userId })),
+      })),
+      locationOptions: event.locationOptions.map((o) => ({
+        id: o.id,
+        name: o.name,
+        mapLink: o.mapLink,
+        mapEmbed: o.mapEmbed,
+        createdBy: o.createdBy,
+        voteCount: o.votes.length,
+      })),
+      members,
       event: {
         id: event.id,
         title: event.title,

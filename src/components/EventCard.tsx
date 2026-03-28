@@ -88,20 +88,27 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
 
       {event.description ? <p className="card-desc">{event.description}</p> : null}
 
-      <dl className="event-meta">
-        <div>
-          <dt>Arrival</dt>
-          <dd>{formatDate(event.arrivalDate)}</dd>
+      {event.arrivalDate === null ? (
+        <div className="tbd-meta">
+          <span className="tbd-badge">Date TBD</span>
+          <Link href={`/events/${event.id}`} className="tbd-vote-link">Vote on date →</Link>
         </div>
-        <div>
-          <dt>Departure</dt>
-          <dd>{event.departureDate ? formatDate(event.departureDate) : "TBD"}</dd>
-        </div>
-        <div>
-          <dt>Location</dt>
-          <dd>{event.location || "TBD"}</dd>
-        </div>
-      </dl>
+      ) : (
+        <dl className="event-meta">
+          <div>
+            <dt>Arrival</dt>
+            <dd>{formatDate(event.arrivalDate)}</dd>
+          </div>
+          <div>
+            <dt>Departure</dt>
+            <dd>{event.departureDate ? formatDate(event.departureDate) : "TBD"}</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd>{event.location || "TBD"}</dd>
+          </div>
+        </dl>
+      )}
 
       {event.mapLink ? (
         <a href={event.mapLink} target="_blank" rel="noreferrer" className="map-link">
@@ -192,6 +199,34 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           font-size: 0.9rem;
           margin: 0 0 10px;
           line-height: 1.5;
+        }
+
+        .tbd-meta {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 8px 0;
+        }
+
+        .tbd-badge {
+          font-size: 0.72rem;
+          padding: 3px 9px;
+          border-radius: 999px;
+          background: rgba(240, 190, 100, 0.15);
+          color: #f0c864;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .tbd-vote-link {
+          font-size: 0.82rem;
+          color: #f4dcb0;
+          text-decoration: none;
+          font-weight: 600;
+        }
+
+        .tbd-vote-link:hover {
+          color: #fff;
         }
 
         .event-meta {

@@ -9,7 +9,7 @@ type HomeGroup = {
   eventCount: number;
 };
 
-type HomeEvent = {
+export type HomeEvent = {
   id: string;
   title: string;
   description: string | null;
@@ -23,13 +23,16 @@ type HomeEvent = {
   departureDate: string | null;
   rsvpCount: number;
   userRsvpStatus: string | null;
+  dateProposalCount: number;
+  locationOptionCount: number;
 };
 
 export type HomePageData = {
   databaseReady: boolean;
   databaseMessage: string | null;
   groups: HomeGroup[];
-  events: HomeEvent[];
+  upcomingEvents: HomeEvent[];
+  tbdEvents: HomeEvent[];
 };
 
 export async function getHomePageData(userId: string): Promise<HomePageData> {
@@ -38,7 +41,8 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
       databaseReady: false,
       databaseMessage: "DATABASE_URL is not configured in the runtime environment.",
       groups: [],
-      events: [],
+      upcomingEvents: [],
+      tbdEvents: [],
     };
   }
 
@@ -50,7 +54,8 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
         databaseReady: false,
         databaseMessage: "DATABASE_URL is not configured in the runtime environment.",
         groups: [],
-        events: [],
+        upcomingEvents: [],
+        tbdEvents: [],
       };
     }
 
@@ -68,6 +73,8 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
             _count: {
               select: {
                 rsvps: true,
+                dateProposals: true,
+                locationOptions: true,
               },
             },
             rsvps: {
@@ -94,38 +101,40 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
       eventCount: group.events.length,
     }));
 
-    const serializedEvents: HomeEvent[] = groups
-      .flatMap((group) =>
-        group.events.map((event) => ({
-          id: event.id,
-          title: event.title,
-          description: event.description,
-          location: event.location,
-          mapLink: event.mapLink,
-          mapEmbed: event.mapEmbed,
-          groupId: group.id,
-          groupAdminId: group.adminId,
-          groupName: group.name,
-          arrivalDate: event.arrivalDate?.toISOString() || null,
-          departureDate: event.departureDate?.toISOString() || null,
-          rsvpCount: event._count.rsvps,
-          userRsvpStatus: event.rsvps[0]?.status ?? null,
-        })),
-      )
-      .sort((left, right) => {
-        if (!left.arrivalDate && !right.arrivalDate) {
-          return left.title.localeCompare(right.title);
-        }
-        if (!left.arrivalDate) return 1;
-        if (!right.arrivalDate) return -1;
-        return left.arrivalDate.localeCompare(right.arrivalDate);
-      });
+    const allEvents: HomeEvent[] = groups.flatMap((group) =>
+      group.events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        mapLink: event.mapLink,
+        mapEmbed: event.mapEmbed,
+        groupId: group.id,
+        groupAdminId: group.adminId,
+        groupName: group.name,
+        arrivalDate: event.arrivalDate?.toISOString() || null,
+        departureDate: event.departureDate?.toISOString() || null,
+        rsvpCount: event._count.rsvps,
+        userRsvpStatus: event.rsvps[0]?.status ?? null,
+        dateProposalCount: event._count.dateProposals,
+        locationOptionCount: event._count.locationOptions,
+      })),
+    );
+
+    const upcomingEvents = allEvents
+      .filter((e) => e.arrivalDate !== null)
+      .sort((a, b) => a.arrivalDate!.localeCompare(b.arrivalDate!));
+
+    const tbdEvents = allEvents
+      .filter((e) => e.arrivalDate === null)
+      .sort((a, b) => a.title.localeCompare(b.title));
 
     return {
       databaseReady: true,
       databaseMessage: null,
       groups: serializedGroups,
-      events: serializedEvents,
+      upcomingEvents,
+      tbdEvents,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown database error";
@@ -134,7 +143,8 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
       databaseReady: false,
       databaseMessage: message,
       groups: [],
-      events: [],
+      upcomingEvents: [],
+      tbdEvents: [],
     };
   }
 }

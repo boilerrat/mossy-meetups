@@ -14,20 +14,24 @@ enum RSVPStatus {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  image         String?
-  phone         String?
-  hometown      String?
-  bio           String?
-  accounts      Account[]
-  sessions      Session[]
-  groups        Group[]
-  rsvps         RSVP[]
-  invites       Invite[]
-  createdAt     DateTime  @default(now())
+  id              String           @id @default(uuid())
+  email           String           @unique
+  emailVerified   DateTime?
+  name            String?
+  image           String?
+  phone           String?
+  hometown        String?
+  bio             String?
+  accounts        Account[]
+  sessions        Session[]
+  groups          Group[]
+  rsvps           RSVP[]
+  invites         Invite[]
+  dateProposals   DateProposal[]
+  dateVotes       DateVote[]
+  locationOptions LocationOption[]
+  locationVotes   LocationVote[]
+  createdAt       DateTime         @default(now())
 }
 
 model Account {
@@ -76,18 +80,69 @@ model Group {
 }
 
 model Event {
-  id            String    @id @default(uuid())
-  groupId       String
-  group         Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  title         String
-  description   String?
-  location      String?
-  mapLink       String?
-  mapEmbed      String?
-  arrivalDate   DateTime?
-  departureDate DateTime?
-  rsvps         RSVP[]
-  createdAt     DateTime  @default(now())
+  id              String           @id @default(uuid())
+  groupId         String
+  group           Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  location        String?
+  mapLink         String?
+  mapEmbed        String?
+  arrivalDate     DateTime?
+  departureDate   DateTime?
+  rsvps           RSVP[]
+  dateProposals   DateProposal[]
+  locationOptions LocationOption[]
+  locationVotes   LocationVote[]
+  createdAt       DateTime         @default(now())
+}
+
+model DateProposal {
+  id        String     @id @default(uuid())
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date      DateTime
+  createdBy String
+  creator   User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  votes     DateVote[]
+  createdAt DateTime   @default(now())
+}
+
+model DateVote {
+  id             String       @id @default(uuid())
+  dateProposalId String
+  dateProposal   DateProposal @relation(fields: [dateProposalId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([dateProposalId, userId])
+}
+
+model LocationOption {
+  id        String         @id @default(uuid())
+  eventId   String
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  mapLink   String?
+  mapEmbed  String?
+  createdBy String
+  creator   User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  votes     LocationVote[]
+  createdAt DateTime       @default(now())
+}
+
+model LocationVote {
+  id               String         @id @default(uuid())
+  locationOptionId String
+  locationOption   LocationOption @relation(fields: [locationOptionId], references: [id], onDelete: Cascade)
+  eventId          String
+  event            Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+
+  @@unique([eventId, userId])
 }
 
 model RSVP {

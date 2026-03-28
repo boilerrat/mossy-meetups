@@ -9,6 +9,7 @@ import { EventCard, type EventCardEvent } from "../components/EventCard";
 import { GroupCard } from "../components/GroupCard";
 import { DatePicker } from "../components/DatePicker";
 import { WeekView, type WeekEvent } from "../components/WeekView";
+import { TbdEventCard, type TbdEventCardEvent } from "../components/TbdEventCard";
 import type { RSVPStatus } from "../components/RSVPButton";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
@@ -40,7 +41,7 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function Home({ databaseReady, databaseMessage, groups, events, userId }: Props) {
+export default function Home({ databaseReady, databaseMessage, groups, upcomingEvents, tbdEvents, userId }: Props) {
   const [groupForm, setGroupForm] = useState(initialGroupForm);
   const [eventForm, setEventForm] = useState({
     ...initialEventForm,
@@ -56,14 +57,15 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
   const [editGroupForm, setEditGroupForm] = useState({ name: "" });
   const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
 
-  // Local events for live RSVP count updates
-  const [localEvents, setLocalEvents] = useState(events);
+  // Local state for live RSVP count updates
+  const [localUpcoming, setLocalUpcoming] = useState(upcomingEvents);
+  const [localTbd] = useState(tbdEvents);
 
   // Event view mode
   const [viewMode, setViewMode] = useState<"week" | "list">("week");
 
   function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
-    setLocalEvents((prev) =>
+    setLocalUpcoming((prev) =>
       prev.map((e) =>
         e.id === eventId
           ? { ...e, userRsvpStatus: newStatus, rsvpCount: hadPreviousRsvp ? e.rsvpCount : e.rsvpCount + 1 }
@@ -72,7 +74,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
     );
   }
 
-  function openEditEvent(event: Props["events"][0]) {
+  function openEditEvent(event: Props["upcomingEvents"][0]) {
     setEditingType("event");
     setEditingId(event.id);
     setEditEventForm({
@@ -184,16 +186,14 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
 
   const sidebarGroups = groups.map((g) => ({ id: g.id, name: g.name }));
 
-  const scheduledEvents: WeekEvent[] = localEvents
-    .filter((e) => e.arrivalDate)
-    .map((e) => ({
-      id: e.id,
-      title: e.title,
-      groupName: e.groupName,
-      arrivalDate: e.arrivalDate as string,
-    }));
+  const scheduledEvents: WeekEvent[] = localUpcoming.map((e) => ({
+    id: e.id,
+    title: e.title,
+    groupName: e.groupName,
+    arrivalDate: e.arrivalDate as string,
+  }));
 
-  const nextMeetup = localEvents.find((e) => e.arrivalDate);
+  const nextMeetup = localUpcoming[0] ?? null;
 
   return (
     <AppShell groups={sidebarGroups}>
@@ -213,7 +213,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
         </article>
         <article className="stat-card">
           <span>Upcoming events</span>
-          <strong>{localEvents.length}</strong>
+          <strong>{localUpcoming.length}</strong>
         </article>
         <article className="stat-card">
           <span>Next meetup</span>
@@ -321,7 +321,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                   label="Arrival"
                   value={eventForm.arrivalDate}
                   onChange={(v) => setEventForm((f) => ({ ...f, arrivalDate: v }))}
-                  required
+                  placeholder="TBD — leave blank to vote later"
                 />
                 <DatePicker
                   label="Departure"
@@ -364,13 +364,13 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
               </div>
             </div>
 
-            {localEvents.length === 0 ? (
-              <p className="empty-state">No meetups yet. Create a group first, then add your first event.</p>
+            {localUpcoming.length === 0 ? (
+              <p className="empty-state">No confirmed events yet.</p>
             ) : viewMode === "week" ? (
               <WeekView events={scheduledEvents} />
             ) : (
               <div className="event-list">
-                {localEvents.map((event) => (
+                {localUpcoming.map((event) => (
                   <EventCard
                     key={event.id}
                     event={event as EventCardEvent}
@@ -383,6 +383,26 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
               </div>
             )}
           </section>
+
+          {/* TBD events panel */}
+          {localTbd.length > 0 ? (
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-label">Needs a date</p>
+                  <h2>Vote on when to go</h2>
+                </div>
+              </div>
+              <div className="event-list">
+                {localTbd.map((event) => (
+                  <TbdEventCard
+                    key={event.id}
+                    event={event as TbdEventCardEvent}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {/* Groups panel */}
           <section className="panel">
@@ -465,7 +485,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events, u
                   label="Arrival"
                   value={editEventForm.arrivalDate}
                   onChange={(v) => setEditEventForm((f) => ({ ...f, arrivalDate: v }))}
-                  required
+                  placeholder="TBD — leave blank to vote later"
                 />
                 <DatePicker
                   label="Departure"

@@ -57,29 +57,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "PATCH") {
     const payload = req.body as UpdateEventPayload;
 
-    if (!payload.title?.trim()) {
+    // title is only required if it's being explicitly set (full edit form)
+    if ("title" in payload && !payload.title?.trim()) {
       return res.status(400).json({ error: "Event title is required" });
     }
 
-    const arrivalDate = parseDate(payload.arrivalDate);
-    if (!arrivalDate) {
-      return res.status(400).json({ error: "Arrival date is required" });
-    }
+    // Build a partial update — only include fields present in the payload
+    const data: Record<string, unknown> = {};
 
-    const departureDate = parseDate(payload.departureDate);
+    if ("title" in payload) data.title = payload.title!.trim();
+    if ("description" in payload) data.description = payload.description?.trim() || null;
+    if ("location" in payload) data.location = payload.location?.trim() || null;
+    if ("mapLink" in payload) data.mapLink = payload.mapLink?.trim() || null;
+    if ("mapEmbed" in payload) data.mapEmbed = payload.mapEmbed?.trim() || null;
+    if ("arrivalDate" in payload) data.arrivalDate = parseDate(payload.arrivalDate);
+    if ("departureDate" in payload) data.departureDate = parseDate(payload.departureDate);
 
-    const updated = await prisma.event.update({
-      where: { id },
-      data: {
-        title: payload.title.trim(),
-        description: payload.description?.trim() || null,
-        location: payload.location?.trim() || null,
-        mapLink: payload.mapLink?.trim() || null,
-        mapEmbed: payload.mapEmbed?.trim() || null,
-        arrivalDate,
-        departureDate,
-      },
-    });
+    const updated = await prisma.event.update({ where: { id }, data });
 
     return res.status(200).json({ success: true, data: updated });
   }
