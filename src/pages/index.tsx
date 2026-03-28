@@ -1,6 +1,5 @@
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Head from "next/head";
-import { useRouter } from "next/router";
 import { FormEvent, useState } from "react";
 
 import { getHomePageData } from "../lib/home-data";
@@ -36,7 +35,6 @@ function formatDate(value: string | null) {
 }
 
 export default function Home({ databaseReady, databaseMessage, groups, events }: Props) {
-  const router = useRouter();
   const [groupForm, setGroupForm] = useState(initialGroupForm);
   const [eventForm, setEventForm] = useState({
     ...initialEventForm,
@@ -70,7 +68,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
     }
 
     setGroupForm(initialGroupForm);
-    await router.replace(router.asPath);
+    window.location.reload();
   }
 
   async function handleEventSubmit(event: FormEvent<HTMLFormElement>) {
@@ -95,7 +93,7 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
       ...initialEventForm,
       groupId: groups[0]?.id || "",
     });
-    await router.replace(router.asPath);
+    window.location.reload();
   }
 
   return (

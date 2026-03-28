@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { prisma } from "../../../lib/prisma";
+import { getPrismaClient, hasDatabaseUrl } from "../../../lib/prisma";
 
 type CreateGroupPayload = {
   name?: string;
@@ -14,6 +14,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  if (!hasDatabaseUrl()) {
+    return res.status(503).json({ error: "DATABASE_URL is not configured" });
+  }
+
   const { name, adminEmail, adminName } = req.body as CreateGroupPayload;
 
   if (!name?.trim()) {
@@ -25,6 +29,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const prisma = getPrismaClient();
+
+    if (!prisma) {
+      return res.status(503).json({ error: "DATABASE_URL is not configured" });
+    }
+
     const admin = await prisma.user.upsert({
       where: {
         email: adminEmail.trim().toLowerCase(),

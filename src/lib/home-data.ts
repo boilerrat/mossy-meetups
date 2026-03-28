@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { getPrismaClient, hasDatabaseUrl } from "./prisma";
 
 type HomeGroup = {
   id: string;
@@ -29,7 +29,27 @@ export type HomePageData = {
 };
 
 export async function getHomePageData(): Promise<HomePageData> {
+  if (!hasDatabaseUrl()) {
+    return {
+      databaseReady: false,
+      databaseMessage: "DATABASE_URL is not configured in the runtime environment.",
+      groups: [],
+      events: [],
+    };
+  }
+
   try {
+    const prisma = getPrismaClient();
+
+    if (!prisma) {
+      return {
+        databaseReady: false,
+        databaseMessage: "DATABASE_URL is not configured in the runtime environment.",
+        groups: [],
+        events: [],
+      };
+    }
+
     const groups = await prisma.group.findMany({
       include: {
         admin: true,
