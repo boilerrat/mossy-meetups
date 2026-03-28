@@ -39,14 +39,14 @@ Everything in Phase 4+ is cosmetic relative to the core data flows in Phases 1�
 
 ---
 
-## Phase 1.5 — User profiles
+## Phase 1.5 — User profiles ✓
 **Goal:** Users can set their identity once and the app uses it everywhere.
 
-- [ ] Add `phone`, `hometown`, and `bio` columns to `User` schema + migration
-- [ ] `GET /api/profile` — return current user's profile
-- [ ] `PATCH /api/profile` — update name, email, phone, hometown, bio
-- [ ] `/profile` page — edit form pre-filled from session user
-- [ ] Auto-redirect to `/profile` after first sign-in (when `name` is null)
+- [x] Add `phone`, `hometown`, and `bio` columns to `User` schema + migration
+- [x] `GET /api/profile` — return current user's profile
+- [x] `PATCH /api/profile` — update name, email, phone, hometown, bio
+- [x] `/profile` page — edit form pre-filled from session user
+- [x] Auto-redirect to `/profile` after first sign-in (when `name` is null)
 - [ ] Pre-fill group/event forms from profile where applicable
 
 Fields: display name, email (sign-in address, shown but not editable), phone, hometown, bio (short freeform).
@@ -82,6 +82,8 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 - [ ] `WeekView` — 7-column grid, events plotted by earliest `DateOption`
 - [ ] `AppShell` with `GroupSidebar` navigation
 - [ ] Mobile responsive collapse (single-column below 768px)
+- [ ] Calendar date picker modal — replace `datetime-local` inputs with a custom calendar popup
+- [ ] Google Maps embed is already wired (`mapEmbed` field + iframe render); no changes needed
 
 ---
 

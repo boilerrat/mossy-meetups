@@ -20,6 +20,7 @@ const initialEventForm = {
   description: "",
   location: "",
   mapLink: "",
+  mapEmbed: "",
   dateOption1: "",
   dateOption2: "",
   dateOption3: "",
@@ -36,7 +37,14 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function Home({ databaseReady, databaseMessage, groups, events }: Props) {
+// Convert ISO string (UTC) to datetime-local input value (local time)
+function isoToDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+export default function Home({ databaseReady, databaseMessage, groups, events, userId }: Props) {
   const [groupForm, setGroupForm] = useState(initialGroupForm);
   const [eventForm, setEventForm] = useState({
     ...initialEventForm,
@@ -50,6 +58,103 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
     loading: false,
     error: null,
   });
+
+  // Edit modal state
+  const [editingType, setEditingType] = useState<"event" | "group" | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editEventForm, setEditEventForm] = useState({ ...initialEventForm });
+  const [editGroupForm, setEditGroupForm] = useState({ name: "" });
+  const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({
+    loading: false,
+    error: null,
+  });
+
+  function openEditEvent(event: Props["events"][0]) {
+    setEditingType("event");
+    setEditingId(event.id);
+    setEditEventForm({
+      groupId: event.groupId,
+      title: event.title,
+      description: event.description || "",
+      location: event.location || "",
+      mapLink: event.mapLink || "",
+      mapEmbed: event.mapEmbed || "",
+      dateOption1: event.dateOptions[0] ? isoToDatetimeLocal(event.dateOptions[0]) : "",
+      dateOption2: event.dateOptions[1] ? isoToDatetimeLocal(event.dateOptions[1]) : "",
+      dateOption3: event.dateOptions[2] ? isoToDatetimeLocal(event.dateOptions[2]) : "",
+    });
+    setEditState({ loading: false, error: null });
+  }
+
+  function openEditGroup(group: Props["groups"][0]) {
+    setEditingType("group");
+    setEditingId(group.id);
+    setEditGroupForm({ name: group.name });
+    setEditState({ loading: false, error: null });
+  }
+
+  function closeModal() {
+    setEditingType(null);
+    setEditingId(null);
+  }
+
+  async function handleDeleteEvent(id: string) {
+    if (!window.confirm("Delete this event? This cannot be undone.")) return;
+    const response = await fetch(`/api/events/${id}`, { method: "DELETE" });
+    if (response.ok) {
+      window.location.reload();
+    }
+  }
+
+  async function handleDeleteGroup(id: string) {
+    if (!window.confirm("Delete this group and all its events? This cannot be undone.")) return;
+    const response = await fetch(`/api/groups/${id}`, { method: "DELETE" });
+    if (response.ok) {
+      window.location.reload();
+    }
+  }
+
+  async function handleEditEventSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingId) return;
+    setEditState({ loading: true, error: null });
+
+    const response = await fetch(`/api/events/${editingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editEventForm),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ error: "Failed to save" }));
+      setEditState({ loading: false, error: payload.error || "Failed to save" });
+      return;
+    }
+
+    closeModal();
+    window.location.reload();
+  }
+
+  async function handleEditGroupSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingId) return;
+    setEditState({ loading: true, error: null });
+
+    const response = await fetch(`/api/groups/${editingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editGroupForm),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ error: "Failed to save" }));
+      setEditState({ loading: false, error: payload.error || "Failed to save" });
+      return;
+    }
+
+    closeModal();
+    window.location.reload();
+  }
 
   async function handleGroupSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -262,6 +367,20 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                     placeholder="https://maps.google.com/..."
                   />
                 </label>
+                <label>
+                  Map embed URL
+                  <input
+                    type="url"
+                    value={eventForm.mapEmbed}
+                    onChange={(event) =>
+                      setEventForm((current) => ({ ...current, mapEmbed: event.target.value }))
+                    }
+                    placeholder="https://www.google.com/maps/embed?pb=..."
+                  />
+                  <span className="field-hint">
+                    Google Maps → Share → Embed a map → copy the src= URL
+                  </span>
+                </label>
                 <div className="date-grid">
                   <label>
                     Date option 1
@@ -269,7 +388,10 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                       type="datetime-local"
                       value={eventForm.dateOption1}
                       onChange={(event) =>
-                        setEventForm((current) => ({ ...current, dateOption1: event.target.value }))
+                        setEventForm((current) => ({
+                          ...current,
+                          dateOption1: event.target.value,
+                        }))
                       }
                       required
                     />
@@ -280,7 +402,10 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                       type="datetime-local"
                       value={eventForm.dateOption2}
                       onChange={(event) =>
-                        setEventForm((current) => ({ ...current, dateOption2: event.target.value }))
+                        setEventForm((current) => ({
+                          ...current,
+                          dateOption2: event.target.value,
+                        }))
                       }
                     />
                   </label>
@@ -290,7 +415,10 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                       type="datetime-local"
                       value={eventForm.dateOption3}
                       onChange={(event) =>
-                        setEventForm((current) => ({ ...current, dateOption3: event.target.value }))
+                        setEventForm((current) => ({
+                          ...current,
+                          dateOption3: event.target.value,
+                        }))
                       }
                     />
                   </label>
@@ -325,7 +453,27 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                           <p className="event-group">{event.groupName}</p>
                           <h3>{event.title}</h3>
                         </div>
-                        <span className="pill">{event.rsvpCount} RSVPs</span>
+                        <div className="card-right">
+                          <span className="pill">{event.rsvpCount} RSVPs</span>
+                          {event.groupAdminId === userId ? (
+                            <div className="card-actions">
+                              <button
+                                className="btn-icon"
+                                onClick={() => openEditEvent(event)}
+                                aria-label="Edit event"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn-icon btn-danger"
+                                onClick={() => handleDeleteEvent(event.id)}
+                                aria-label="Delete event"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                       {event.description ? <p>{event.description}</p> : null}
                       <dl className="event-meta">
@@ -345,8 +493,17 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                       </ul>
                       {event.mapLink ? (
                         <a href={event.mapLink} target="_blank" rel="noreferrer">
-                          Open map
+                          Open map ↗
                         </a>
+                      ) : null}
+                      {event.mapEmbed ? (
+                        <iframe
+                          src={event.mapEmbed}
+                          className="map-embed"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title={`Map for ${event.title}`}
+                        />
                       ) : null}
                     </article>
                   ))
@@ -373,7 +530,27 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
                           Hosted by {group.adminName} · {group.adminEmail}
                         </p>
                       </div>
-                      <span className="pill">{group.eventCount} events</span>
+                      <div className="card-right">
+                        <span className="pill">{group.eventCount} events</span>
+                        {group.adminId === userId ? (
+                          <div className="card-actions">
+                            <button
+                              className="btn-icon"
+                              onClick={() => openEditGroup(group)}
+                              aria-label="Edit group"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn-icon btn-danger"
+                              onClick={() => handleDeleteGroup(group.id)}
+                              aria-label="Delete group"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </article>
                   ))
                 )}
@@ -382,6 +559,144 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           </div>
         </section>
       </main>
+
+      {/* Edit event modal */}
+      {editingType === "event" && editingId !== null ? (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <p className="panel-label">Edit event</p>
+            <h2>Update event details</h2>
+            <form className="form-grid" onSubmit={handleEditEventSubmit}>
+              <label>
+                Event title
+                <input
+                  value={editEventForm.title}
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, title: e.target.value }))
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  value={editEventForm.description}
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  rows={3}
+                />
+              </label>
+              <label>
+                Location
+                <input
+                  value={editEventForm.location}
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, location: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Map link
+                <input
+                  type="url"
+                  value={editEventForm.mapLink}
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, mapLink: e.target.value }))
+                  }
+                  placeholder="https://maps.google.com/..."
+                />
+              </label>
+              <label>
+                Map embed URL
+                <input
+                  type="url"
+                  value={editEventForm.mapEmbed}
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, mapEmbed: e.target.value }))
+                  }
+                  placeholder="https://www.google.com/maps/embed?pb=..."
+                />
+                <span className="field-hint">
+                  Google Maps → Share → Embed a map → copy the src= URL
+                </span>
+              </label>
+              <div className="date-grid">
+                <label>
+                  Date option 1
+                  <input
+                    type="datetime-local"
+                    value={editEventForm.dateOption1}
+                    onChange={(e) =>
+                      setEditEventForm((f) => ({ ...f, dateOption1: e.target.value }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Date option 2
+                  <input
+                    type="datetime-local"
+                    value={editEventForm.dateOption2}
+                    onChange={(e) =>
+                      setEditEventForm((f) => ({ ...f, dateOption2: e.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Date option 3
+                  <input
+                    type="datetime-local"
+                    value={editEventForm.dateOption3}
+                    onChange={(e) =>
+                      setEditEventForm((f) => ({ ...f, dateOption3: e.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+              {editState.error ? <p className="form-error">{editState.error}</p> : null}
+              <div className="modal-actions">
+                <button type="submit" disabled={editState.loading}>
+                  {editState.loading ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" className="btn-ghost" onClick={closeModal}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Edit group modal */}
+      {editingType === "group" && editingId !== null ? (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <p className="panel-label">Edit group</p>
+            <h2>Update group name</h2>
+            <form className="form-grid" onSubmit={handleEditGroupSubmit}>
+              <label>
+                Group name
+                <input
+                  value={editGroupForm.name}
+                  onChange={(e) => setEditGroupForm({ name: e.target.value })}
+                  required
+                />
+              </label>
+              {editState.error ? <p className="form-error">{editState.error}</p> : null}
+              <div className="modal-actions">
+                <button type="submit" disabled={editState.loading}>
+                  {editState.loading ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" className="btn-ghost" onClick={closeModal}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       <style jsx>{`
         :global(body) {
           margin: 0;
@@ -523,6 +838,11 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           color: #e6dfd0;
         }
 
+        .field-hint {
+          font-size: 0.8rem;
+          color: #8a847a;
+        }
+
         input,
         select,
         textarea,
@@ -561,6 +881,41 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           opacity: 0.7;
         }
 
+        .btn-ghost {
+          background: transparent;
+          border: 1px solid rgba(243, 235, 220, 0.2);
+          color: #c9c2b3;
+          font-weight: 400;
+        }
+
+        .btn-ghost:hover {
+          border-color: rgba(243, 235, 220, 0.4);
+          color: #f3ebdc;
+        }
+
+        .btn-icon {
+          background: rgba(243, 235, 220, 0.08);
+          color: #c9c2b3;
+          font-size: 0.78rem;
+          font-weight: 400;
+          padding: 5px 10px;
+          border-radius: 999px;
+        }
+
+        .btn-icon:hover {
+          background: rgba(243, 235, 220, 0.14);
+          color: #f3ebdc;
+        }
+
+        .btn-danger {
+          color: #f0a090;
+        }
+
+        .btn-danger:hover {
+          background: rgba(240, 100, 80, 0.15);
+          color: #f4c4b8;
+        }
+
         .date-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
@@ -577,12 +932,32 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           padding: 18px;
         }
 
-        .event-header,
+        .event-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+          margin-bottom: 10px;
+        }
+
         .group-card {
           display: flex;
           justify-content: space-between;
           gap: 12px;
           align-items: flex-start;
+        }
+
+        .card-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .card-actions {
+          display: flex;
+          gap: 6px;
         }
 
         .pill {
@@ -617,6 +992,15 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           color: #d4d0c7;
         }
 
+        .map-embed {
+          display: block;
+          width: 100%;
+          height: 200px;
+          border: 0;
+          border-radius: 12px;
+          margin-top: 10px;
+        }
+
         .empty-state,
         .form-error {
           color: #f0d3a5;
@@ -626,11 +1010,47 @@ export default function Home({ databaseReady, databaseMessage, groups, events }:
           color: #f4dcb0;
         }
 
+        /* Modal */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          z-index: 100;
+        }
+
+        .modal {
+          width: 100%;
+          max-width: 540px;
+          max-height: 90vh;
+          overflow-y: auto;
+          border: 1px solid rgba(243, 235, 220, 0.12);
+          background: #0d1c17;
+          box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+          border-radius: 28px;
+          padding: 32px;
+        }
+
+        .modal h2 {
+          margin-bottom: 20px;
+        }
+
+        .modal-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
         @media (max-width: 960px) {
           .stats-grid,
           .content-grid,
           .date-grid,
-          .event-meta {
+          .event-meta,
+          .modal-actions {
             grid-template-columns: 1fr;
           }
         }
@@ -653,6 +1073,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const data = await getHomePageData();
 
   return {
-    props: data,
+    props: {
+      ...data,
+      userId: session.user.id,
+    },
   };
 };

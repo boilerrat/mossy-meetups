@@ -3,6 +3,7 @@ import { getPrismaClient, hasDatabaseUrl } from "./prisma";
 type HomeGroup = {
   id: string;
   name: string;
+  adminId: string;
   adminName: string;
   adminEmail: string;
   eventCount: number;
@@ -14,7 +15,9 @@ type HomeEvent = {
   description: string | null;
   location: string | null;
   mapLink: string | null;
+  mapEmbed: string | null;
   groupId: string;
+  groupAdminId: string;
   groupName: string;
   nextDate: string | null;
   dateOptions: string[];
@@ -79,6 +82,7 @@ export async function getHomePageData(): Promise<HomePageData> {
     const serializedGroups: HomeGroup[] = groups.map((group) => ({
       id: group.id,
       name: group.name,
+      adminId: group.adminId,
       adminName: group.admin.name || "Unnamed host",
       adminEmail: group.admin.email,
       eventCount: group.events.length,
@@ -92,7 +96,9 @@ export async function getHomePageData(): Promise<HomePageData> {
           description: event.description,
           location: event.location,
           mapLink: event.mapLink,
+          mapEmbed: event.mapEmbed,
           groupId: group.id,
+          groupAdminId: group.adminId,
           groupName: group.name,
           nextDate: event.dateOptions[0]?.date.toISOString() || null,
           dateOptions: event.dateOptions.map((option) => option.date.toISOString()),

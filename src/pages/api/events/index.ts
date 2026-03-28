@@ -10,6 +10,7 @@ type CreateEventPayload = {
   description?: string;
   location?: string;
   mapLink?: string;
+  mapEmbed?: string;
   dateOption1?: string;
   dateOption2?: string;
   dateOption3?: string;
@@ -67,6 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         description: payload.description?.trim() || null,
         location: payload.location?.trim() || null,
         mapLink: payload.mapLink?.trim() || null,
+        mapEmbed: payload.mapEmbed?.trim() || null,
         dateOptions: {
           create: dateOptions.map((date) => ({ date })),
         },

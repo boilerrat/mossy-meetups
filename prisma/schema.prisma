@@ -83,6 +83,7 @@ model Event {
   description String?
   location    String?
   mapLink     String?
+  mapEmbed    String?
   dateOptions DateOption[]
   rsvps       RSVP[]
   createdAt   DateTime     @default(now())
