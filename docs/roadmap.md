@@ -181,16 +181,16 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 
 ---
 
-## Phase 8d — Content & Personality ("More Moss")
+## Phase 8d — Content & Personality ("More Moss") ✓
 **Goal:** Lean into the Dead-head / festival camping aesthetic with useful, playful content that makes the site feel like a living camp community.
 
-- [ ] **Visual moss** — add illustrated or SVG moss textures to card edges, the sidebar footer, section dividers, and the page footer. The goal is organic shapes and textures, not just green colour.
-- [ ] **Camping essentials checklist** — a page or collapsible panel listing packing must-haves written in the spirit of a vintage Boy Scout field manual. Make it practical and printable.
-- [ ] **First aid quick-reference** — basic wilderness first-aid reminders (cuts, burns, sprains, bee stings). Keep the tone earnest and the content actually useful.
-- [ ] **Tick safety guide** — how to check after a hike, how to remove a tick properly, and when to see a doctor. Practical tone; no need to be scary.
-- [ ] **Rainy day activities** — a fun list of things to do when the skies open up at camp. Lean into the culture.
-- [ ] **Campers' etiquette** — a playful, slightly tongue-in-cheek set of camp commandments for good citizens of the site (quiet hours, shared fire wood, leave no trace, etc.).
-- [ ] **FAQ / How-to guide** — a short explainer covering the core flows: creating a group, sending invites, proposing and voting on dates, confirming a date, RSVPing, and exporting to calendar. Link it from the nav or footer.
+- [x] **Visual moss** — add illustrated or SVG moss textures to card edges, the sidebar footer, section dividers, and the page footer. The goal is organic shapes and textures, not just green colour.
+- [x] **Camping essentials checklist** — a page or collapsible panel listing packing must-haves written in the spirit of a vintage Boy Scout field manual. Make it practical and printable.
+- [x] **First aid quick-reference** — basic wilderness first-aid reminders (cuts, burns, sprains, bee stings). Keep the tone earnest and the content actually useful.
+- [x] **Tick safety guide** — how to check after a hike, how to remove a tick properly, and when to see a doctor. Practical tone; no need to be scary.
+- [x] **Rainy day activities** — a fun list of things to do when the skies open up at camp. Lean into the culture.
+- [x] **Campers' etiquette** — a playful, slightly tongue-in-cheek set of camp commandments for good citizens of the site (quiet hours, shared fire wood, leave no trace, etc.).
+- [x] **FAQ / How-to guide** — a short explainer covering the core flows: creating a group, sending invites, proposing and voting on dates, confirming a date, RSVPing, and exporting to calendar. Link it from the nav or footer.
 
 ---
 
