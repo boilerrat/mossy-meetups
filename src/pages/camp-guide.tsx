@@ -250,7 +250,7 @@ export default function CampGuide() {
             <section>
               <h2>🩹 Basic Wilderness First Aid</h2>
               <p className="section-intro">
-                Not a substitute for a first-aid course or professional care — but useful reminders when you're
+                Not a substitute for a first-aid course or professional care — but useful reminders when you&apos;re
                 an hour from the trailhead.
               </p>
               <div className="cards-grid">
@@ -277,7 +277,7 @@ export default function CampGuide() {
             <section>
               <h2>🕷 Tick Safety</h2>
               <p className="section-intro">
-                Most tick bites are uneventful. The ones that aren't are entirely preventable.
+                Most tick bites are uneventful. The ones that aren&apos;t are entirely preventable.
               </p>
               <div className="tick-blocks">
                 <div className="info-card">

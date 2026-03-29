@@ -71,7 +71,7 @@ export function DateVoteGrid({
 
   const toggleVote = useCallback(
     async (proposal: DateProposalData) => {
-      const voted = hasVoted(proposal);
+      const voted = proposal.votes.some((v) => v.userId === currentUserId);
 
       // Optimistic update
       setProposals((prev) =>
