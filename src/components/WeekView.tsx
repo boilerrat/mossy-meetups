@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface WeekEvent {
   id: string;
@@ -61,9 +61,16 @@ function formatEventTime(iso: string): string {
 }
 
 export function WeekView({ events }: WeekViewProps) {
-  const today = new Date();
-  const [monday, setMonday] = useState(() => getMonday(today));
+  // today is null on the server; set client-side in useEffect to avoid timezone hydration mismatch
+  const [today, setToday] = useState<Date | null>(null);
+  const [monday, setMonday] = useState(() => getMonday(new Date()));
   const [activeDayIndex, setActiveDayIndex] = useState(0); // mobile: which day is showing
+
+  useEffect(() => {
+    const t = new Date();
+    setToday(t);
+    setMonday(getMonday(t)); // correct to client's current week
+  }, []);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const weekLabel = formatWeekLabel(monday);
@@ -81,7 +88,7 @@ export function WeekView({ events }: WeekViewProps) {
     return events.filter((e) => sameDay(new Date(e.arrivalDate), day));
   }
 
-  const isThisWeek = sameDay(monday, getMonday(today));
+  const isThisWeek = today ? sameDay(monday, getMonday(today)) : false;
 
   return (
     <div className="wv-root">
@@ -103,7 +110,7 @@ export function WeekView({ events }: WeekViewProps) {
       <div className="wv-grid">
         {days.map((day, i) => {
           const dayEvents = eventsForDay(day);
-          const isToday = sameDay(day, today);
+          const isToday = today ? sameDay(day, today) : false;
           return (
             <div key={i} className={`wv-col ${isToday ? "wv-col--today" : ""}`}>
               <div className="wv-col-header">
@@ -119,7 +126,7 @@ export function WeekView({ events }: WeekViewProps) {
                   dayEvents.map((ev) => (
                     <Link key={ev.id} href={`/events/${ev.id}`} className="wv-event">
                       <span className="wv-event-title">{ev.title}</span>
-                      <span className="wv-event-meta">{formatEventTime(ev.arrivalDate)}</span>
+                      <span suppressHydrationWarning className="wv-event-meta">{formatEventTime(ev.arrivalDate)}</span>
                       <span className="wv-event-group">{ev.groupName}</span>
                     </Link>
                   ))
@@ -134,7 +141,7 @@ export function WeekView({ events }: WeekViewProps) {
       <div className="wv-mobile">
         <div className="wv-day-tabs">
           {days.map((day, i) => {
-            const isToday = sameDay(day, today);
+            const isToday = today ? sameDay(day, today) : false;
             const hasEvents = eventsForDay(day).length > 0;
             return (
               <button

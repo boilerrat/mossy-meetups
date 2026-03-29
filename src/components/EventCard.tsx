@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { RSVPButton, type RSVPStatus } from "./RSVPButton";
 import { WeatherWidget } from "./WeatherWidget";
@@ -75,6 +75,15 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus | null>(
     event.userRsvpStatus as RSVPStatus | null
   );
+  // Countdown computed client-only to avoid server/client timezone mismatch (React #425)
+  const [countdown, setCountdown] = useState<ReturnType<typeof getCountdownLabel> | null>(null);
+
+  useEffect(() => {
+    if (event.arrivalDate) {
+      setCountdown(getCountdownLabel(event.arrivalDate, event.departureDate));
+    }
+  }, [event.arrivalDate, event.departureDate]);
+
   const isAdmin = event.groupAdminId === userId;
 
   function handleRsvpChange(newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
@@ -82,9 +91,6 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
     if (!hadPreviousRsvp) setRsvpCount((c) => c + 1);
     onRsvpChange?.(newStatus, hadPreviousRsvp);
   }
-
-  const countdown =
-    event.arrivalDate ? getCountdownLabel(event.arrivalDate, event.departureDate) : null;
 
   return (
     <article className="card">
@@ -145,7 +151,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
         <dl className="event-meta">
           <div>
             <dt>Arrival</dt>
-            <dd>{formatDate(event.arrivalDate)}</dd>
+            <dd suppressHydrationWarning>{formatDate(event.arrivalDate)}</dd>
           </div>
           <div>
             <dt>Nights</dt>
