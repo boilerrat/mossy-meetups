@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/router";
 
 import { authOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
@@ -12,12 +13,47 @@ import type { RSVPStatus } from "../../components/RSVPButton";
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Props) {
+  const router = useRouter();
   const [localEvents, setLocalEvents] = useState(group.events.filter((e) => e.arrivalDate !== null));
   const tbdEvents = group.events.filter((e) => e.arrivalDate === null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteState, setInviteState] = useState<{ loading: boolean; error: string | null; sent: boolean }>(
     { loading: false, error: null, sent: false }
   );
+  const [editName, setEditName] = useState(group.name);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
+  const [deleteState, setDeleteState] = useState<{ loading: boolean }>({ loading: false });
+
+  async function handleRenameSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editName.trim()) return;
+    setEditState({ loading: true, error: null });
+    const res = await fetch(`/api/groups/${group.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editName.trim() }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({ error: "Failed to save" }));
+      setEditState({ loading: false, error: payload.error || "Failed to save" });
+      return;
+    }
+    setEditState({ loading: false, error: null });
+    setShowEditForm(false);
+    router.replace(router.asPath);
+  }
+
+  async function handleDeleteGroup() {
+    if (!window.confirm(`Delete "${group.name}" and all its events? This cannot be undone.`)) return;
+    setDeleteState({ loading: true });
+    const res = await fetch(`/api/groups/${group.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/");
+    } else {
+      setDeleteState({ loading: false });
+    }
+  }
 
   function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
     setLocalEvents((prev) =>
@@ -50,8 +86,54 @@ export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Pro
     <AppShell title={group.name} groups={sidebarGroups}>
       <header className="group-header">
         <p className="eyebrow">Group</p>
-        <h1>{group.name}</h1>
-        <p className="meta">Hosted by {group.adminName}</p>
+        {showEditForm && isAdmin ? (
+          <form className="rename-form" onSubmit={handleRenameSubmit}>
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="rename-input"
+              required
+              aria-label="Group name"
+            />
+            {editState.error ? <p className="form-error">{editState.error}</p> : null}
+            <div className="rename-actions">
+              <button type="submit" className="btn-save" disabled={editState.loading}>
+                {editState.loading ? "Saving…" : "Save"}
+              </button>
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => { setShowEditForm(false); setEditName(group.name); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <h1>{group.name}</h1>
+        )}
+        <div className="header-row">
+          <p className="meta">Hosted by {group.adminName}</p>
+          {isAdmin && !showEditForm ? (
+            <div className="admin-actions">
+              <button
+                type="button"
+                className="btn-edit"
+                onClick={() => setShowEditForm(true)}
+              >
+                Rename
+              </button>
+              <button
+                type="button"
+                className="btn-delete"
+                onClick={handleDeleteGroup}
+                disabled={deleteState.loading}
+              >
+                {deleteState.loading ? "Deleting…" : "Delete group"}
+              </button>
+            </div>
+          ) : null}
+        </div>
       </header>
 
       <div className="content-grid">
@@ -219,6 +301,97 @@ export default function GroupPage({ group, isAdmin, userId, sidebarGroups }: Pro
         .meta {
           color: #c9c2b3;
           margin: 0;
+        }
+
+        .header-row {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .admin-actions {
+          display: flex;
+          gap: 8px;
+          margin-left: auto;
+        }
+
+        .btn-edit,
+        .btn-delete,
+        .btn-save,
+        .btn-cancel {
+          font: inherit;
+          font-size: 0.82rem;
+          border-radius: 999px;
+          padding: 6px 14px;
+          cursor: pointer;
+          border: 1px solid transparent;
+        }
+
+        .btn-edit {
+          background: rgba(215, 185, 127, 0.12);
+          color: #d7b97f;
+          border-color: rgba(215, 185, 127, 0.3);
+        }
+
+        .btn-edit:hover {
+          background: rgba(215, 185, 127, 0.2);
+        }
+
+        .btn-delete {
+          background: rgba(240, 100, 90, 0.1);
+          color: #f0a090;
+          border-color: rgba(240, 100, 90, 0.25);
+        }
+
+        .btn-delete:hover:not(:disabled) {
+          background: rgba(240, 100, 90, 0.2);
+        }
+
+        .btn-delete:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        .rename-form {
+          display: grid;
+          gap: 10px;
+          margin-bottom: 6px;
+        }
+
+        .rename-input {
+          font: inherit;
+          font-size: clamp(1.4rem, 3vw, 2rem);
+          font-weight: 700;
+          border: 1px solid rgba(215, 185, 127, 0.4);
+          border-radius: 12px;
+          background: rgba(5, 11, 9, 0.5);
+          color: #f3ebdc;
+          padding: 10px 14px;
+          width: 100%;
+        }
+
+        .rename-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .btn-save {
+          background: linear-gradient(135deg, #d7b97f, #b98545);
+          color: #10231d;
+          font-weight: 700;
+          border: 0;
+        }
+
+        .btn-save:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        .btn-cancel {
+          background: transparent;
+          color: #c9c2b3;
+          border-color: rgba(243, 235, 220, 0.2);
         }
 
         .content-grid {

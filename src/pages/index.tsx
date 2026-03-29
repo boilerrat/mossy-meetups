@@ -26,6 +26,18 @@ const initialEventForm = {
   departureDate: "",
 };
 
+// Extract the src URL from a Google Maps iframe embed snippet.
+// If the user pastes a full <iframe> tag, pull out the src attribute value.
+// If they paste a bare URL, return it as-is.
+function extractMapEmbedSrc(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("<iframe")) {
+    const match = trimmed.match(/\bsrc="([^"]+)"/);
+    return match ? match[1] : trimmed;
+  }
+  return trimmed;
+}
+
 // Convert UTC ISO string to datetime-local value (local time)
 function isoToDatetimeLocal(iso: string) {
   const date = new Date(iso);
@@ -307,14 +319,16 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                 />
               </label>
               <label>
-                Map embed URL
+                Map embed
                 <input
-                  type="url"
+                  type="text"
                   value={eventForm.mapEmbed}
-                  onChange={(e) => setEventForm((f) => ({ ...f, mapEmbed: e.target.value }))}
-                  placeholder="https://www.google.com/maps/embed?pb=…"
+                  onChange={(e) =>
+                    setEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
+                  }
+                  placeholder="Paste the Google Maps embed code or src= URL"
                 />
-                <span className="field-hint">Google Maps → Share → Embed a map → copy the src= URL</span>
+                <span className="field-hint">Google Maps → Share → Embed a map → paste the full embed code or just the src= URL</span>
               </label>
               <div className="date-grid">
                 <DatePicker
@@ -471,14 +485,16 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                 />
               </label>
               <label>
-                Map embed URL
+                Map embed
                 <input
-                  type="url"
+                  type="text"
                   value={editEventForm.mapEmbed}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, mapEmbed: e.target.value }))}
-                  placeholder="https://www.google.com/maps/embed?pb=…"
+                  onChange={(e) =>
+                    setEditEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
+                  }
+                  placeholder="Paste the Google Maps embed code or src= URL"
                 />
-                <span className="field-hint">Google Maps → Share → Embed a map → copy the src= URL</span>
+                <span className="field-hint">Google Maps → Share → Embed a map → paste the full embed code or just the src= URL</span>
               </label>
               <div className="date-grid">
                 <DatePicker

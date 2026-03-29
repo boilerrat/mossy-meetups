@@ -154,10 +154,10 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 ## Phase 8a — Bug Fixes & Critical UX Corrections
 **Goal:** Fix known bugs and UX gaps that break or obscure core functionality.
 
-- [ ] **Map embed input** — the map field expects a Google Maps `<iframe>` embed snippet, not a plain URL. Update the input label, placeholder, and help text to reflect this. If the user pastes a full `<iframe>` tag, parse the `src` attribute automatically rather than storing raw HTML.
-- [ ] **Single vote enforcement on date proposals** — verify that `POST /api/date-votes` enforces the `@@unique([dateProposalId, userId])` constraint at the API layer, not just the database, and that the UI disables or un-highlights a cell the user has already voted on so the state is always visible.
-- [ ] **Location voting UX overhaul** — current location voting is confusing or non-functional. Replace it with a LettuceMeet-style grid (locations as columns, members as rows, click a cell to cast or change your vote) that mirrors the date voting experience. Enforce one vote per user per event.
-- [ ] **Edit and delete for your own groups** — group admins should see "Edit" and "Delete" controls on the group detail page. Deleting a group must confirm before proceeding and cascade-removes all events, RSVPs, and invites.
+- [x] **Map embed input** — the map field expects a Google Maps `<iframe>` embed snippet, not a plain URL. Update the input label, placeholder, and help text to reflect this. If the user pastes a full `<iframe>` tag, parse the `src` attribute automatically rather than storing raw HTML.
+- [x] **Single vote enforcement on date proposals** — verify that `POST /api/date-votes` enforces the `@@unique([dateProposalId, userId])` constraint at the API layer, not just the database, and that the UI disables or un-highlights a cell the user has already voted on so the state is always visible.
+- [x] **Location voting UX overhaul** — current location voting is confusing or non-functional. Replace it with a LettuceMeet-style grid (locations as columns, members as rows, click a cell to cast or change your vote) that mirrors the date voting experience. Enforce one vote per user per event.
+- [x] **Edit and delete for your own groups** — group admins should see "Edit" and "Delete" controls on the group detail page. Deleting a group must confirm before proceeding and cascade-removes all events, RSVPs, and invites.
 
 ---
 

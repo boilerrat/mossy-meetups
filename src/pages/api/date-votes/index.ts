@@ -42,19 +42,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(403).json({ error: "You are not a member of this group" });
   }
 
-  // Toggle: delete-first-then-create pattern (race-condition safe)
-  const deleted = await prisma.dateVote.deleteMany({
-    where: { dateProposalId, userId: session.user.id },
-  });
-
-  if (deleted.count === 0) {
-    await prisma.dateVote.create({
-      data: { dateProposalId, userId: session.user.id },
+  // Toggle: delete-first-then-create pattern (race-condition safe, enforces single vote)
+  try {
+    const deleted = await prisma.dateVote.deleteMany({
+      where: { dateProposalId, userId: session.user.id },
     });
-    return res.status(200).json({ success: true, data: { voted: true } });
-  }
 
-  return res.status(200).json({ success: true, data: { voted: false } });
+    if (deleted.count === 0) {
+      await prisma.dateVote.create({
+        data: { dateProposalId, userId: session.user.id },
+      });
+      return res.status(200).json({ success: true, data: { voted: true } });
+    }
+
+    return res.status(200).json({ success: true, data: { voted: false } });
+  } catch {
+    return res.status(500).json({ error: "Failed to record vote" });
+  }
 }
 
 export default withRateLimit(handler);

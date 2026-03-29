@@ -162,10 +162,10 @@ export default function EventPage({
                 <LocationPoll
                   eventId={event.id}
                   options={locationOptions as LocationOptionData[]}
+                  members={members as Array<{ id: string; name: string }>}
                   userVoteOptionId={userLocationVoteId}
                   currentUserId={userId}
                   isAdmin={isAdmin}
-                  totalVoters={attendees.length || 1}
                   onLocationConfirmed={refreshPage}
                 />
               ) : null}
@@ -576,6 +576,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         mapEmbed: o.mapEmbed,
         createdBy: o.createdBy,
         voteCount: o.votes.length,
+        votes: o.votes.map((v) => ({ userId: v.userId })),
       })),
       members,
       event: {
