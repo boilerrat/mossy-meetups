@@ -24,7 +24,17 @@ export default async function handler(
     });
   }
 
-  const prisma = getPrismaClient();
+  let prisma;
+
+  try {
+    prisma = getPrismaClient();
+  } catch {
+    return res.status(200).json({
+      status: "degraded",
+      database: "disconnected",
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   if (!prisma) {
     return res.status(200).json({

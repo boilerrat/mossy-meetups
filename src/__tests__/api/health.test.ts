@@ -40,6 +40,18 @@ describe("GET /api/health", () => {
     expect(res.body).toMatchObject({ status: "degraded", database: "unconfigured" });
   });
 
+  it("returns degraded when prisma client initialization throws", async () => {
+    vi.mocked(hasDatabaseUrl).mockReturnValue(true);
+    vi.mocked(getPrismaClient).mockImplementation(() => {
+      throw new Error("Prisma client initialization failed");
+    });
+    const req = mockReq({ method: "GET" });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ status: "degraded", database: "disconnected" });
+  });
+
   it("returns ok with database connected when query succeeds", async () => {
     const prisma = { $queryRaw: vi.fn().mockResolvedValue([{ "?column?": 1 }]) };
     vi.mocked(hasDatabaseUrl).mockReturnValue(true);
