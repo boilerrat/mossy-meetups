@@ -1,4 +1,4 @@
-FROM node:20-bullseye-slim
+FROM node:18-bullseye-slim
 WORKDIR /app
 ENV NODE_OPTIONS=--dns-result-order=ipv6first
 COPY package.json package-lock.json* ./
