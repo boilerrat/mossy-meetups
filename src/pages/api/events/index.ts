@@ -14,7 +14,8 @@ type CreateEventPayload = {
   mapLink?: string;
   mapEmbed?: string;
   arrivalDate?: string;
-  departureDate?: string;
+  nights?: number | string;
+  isPotluck?: boolean;
 };
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -43,7 +44,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const arrivalDate = parseDate(payload.arrivalDate);
-  const departureDate = parseDate(payload.departureDate);
+  const nights = payload.nights ? parseInt(String(payload.nights), 10) : null;
+  const departureDate =
+    arrivalDate && nights && nights > 0
+      ? new Date(arrivalDate.getTime() + nights * 24 * 60 * 60 * 1000)
+      : null;
 
   try {
     const prisma = getPrismaClient();
@@ -62,6 +67,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         mapEmbed: payload.mapEmbed?.trim() || null,
         arrivalDate,
         departureDate,
+        nights: nights && nights > 0 ? nights : null,
+        isPotluck: Boolean(payload.isPotluck),
       },
     });
 

@@ -21,6 +21,8 @@ export type HomeEvent = {
   groupName: string;
   arrivalDate: string | null;
   departureDate: string | null;
+  nights: number | null;
+  isPotluck: boolean;
   rsvpCount: number;
   userRsvpStatus: string | null;
   dateProposalCount: number;
@@ -114,6 +116,8 @@ export async function getHomePageData(userId: string): Promise<HomePageData> {
         groupName: group.name,
         arrivalDate: event.arrivalDate?.toISOString() || null,
         departureDate: event.departureDate?.toISOString() || null,
+        nights: event.nights ?? null,
+        isPotluck: event.isPotluck,
         rsvpCount: event._count.rsvps,
         userRsvpStatus: event.rsvps[0]?.status ?? null,
         dateProposalCount: event._count.dateProposals,

@@ -164,11 +164,11 @@ Fields: display name, email (sign-in address, shown but not editable), phone, ho
 ## Phase 8b — Event & Group Feature Enhancements
 **Goal:** Improve the event planning workflow with focused additions that remove friction.
 
-- [ ] **Nights counter replaces departure date** — swap the departure date field for a "How many nights?" number input. Departure date is calculated automatically (`arrivalDate + nights`). For TBD events, apply the same nights offset to each date proposal so the full stay window shows in the availability grid.
-- [ ] **Auto-join group on RSVP** — when a user RSVPs "Attending" or "Maybe" to an event, add them to the event's group as a member automatically if they are not already one. Email invites remain available in parallel as a way to reach people before they find the event.
-- [ ] **Potluck flag on events** — add a "Potluck" checkbox to event creation and the event edit form. Show a potluck badge on EventCards and on the event detail page when enabled.
-- [ ] **Countdown pill on EventCards** — for events with a confirmed arrival date, display "X days away", "Tomorrow", "Today!", or "Happening now" as a small pill. Update the label appropriately once the event is in the past.
-- [ ] **"My RSVPs" filter on the dashboard** — add a toggle that switches the event list between "All upcoming events" and "Events I've responded to". Remember the last-used preference in local state.
+- [x] **Nights counter replaces departure date** — swap the departure date field for a "How many nights?" number input. Departure date is calculated automatically (`arrivalDate + nights`). For TBD events, apply the same nights offset to each date proposal so the full stay window shows in the availability grid.
+- [x] **Auto-join group on RSVP** — when a user RSVPs "Attending" or "Maybe" to an event, add them to the event's group as a member automatically if they are not already one. Email invites remain available in parallel as a way to reach people before they find the event.
+- [x] **Potluck flag on events** — add a "Potluck" checkbox to event creation and the event edit form. Show a potluck badge on EventCards and on the event detail page when enabled.
+- [x] **Countdown pill on EventCards** — for events with a confirmed arrival date, display "X days away", "Tomorrow", "Today!", or "Happening now" as a small pill. Update the label appropriately once the event is in the past.
+- [x] **"My RSVPs" filter on the dashboard** — add a toggle that switches the event list between "All upcoming events" and "Events I've responded to". Remember the last-used preference in local state.
 
 ---
 

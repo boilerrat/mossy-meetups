@@ -20,6 +20,7 @@ interface DateVoteGridProps {
   members: MemberData[];
   currentUserId: string;
   isAdmin: boolean;
+  nights?: number | null;
   onDateConfirmed: () => void;
 }
 
@@ -39,12 +40,22 @@ function formatColTime(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeStyle: "short" }).format(d);
 }
 
+function formatDepartureDate(arrivalIso: string, nights: number): string {
+  const dep = new Date(new Date(arrivalIso).getTime() + nights * 24 * 60 * 60 * 1000);
+  return new Intl.DateTimeFormat("en-CA", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(dep);
+}
+
 export function DateVoteGrid({
   eventId,
   proposals: initialProposals,
   members,
   currentUserId,
   isAdmin,
+  nights,
   onDateConfirmed,
 }: DateVoteGridProps) {
   const [proposals, setProposals] = useState(initialProposals);
@@ -157,6 +168,11 @@ export function DateVoteGrid({
                     <span className="dvg-date-label">{formatColDate(p.date)}</span>
                     {formatColTime(p.date) ? (
                       <span className="dvg-time-label">{formatColTime(p.date)}</span>
+                    ) : null}
+                    {nights && nights > 0 ? (
+                      <span className="dvg-nights-label">
+                        → {formatDepartureDate(p.date, nights)} ({nights}n)
+                      </span>
                     ) : null}
                     {canDeleteProposal(p) ? (
                       <button
@@ -309,6 +325,12 @@ export function DateVoteGrid({
         .dvg-time-label {
           font-size: 0.7rem;
           color: #8a847a;
+        }
+
+        .dvg-nights-label {
+          font-size: 0.68rem;
+          color: #7ec87e;
+          opacity: 0.85;
         }
 
         .dvg-delete-btn {

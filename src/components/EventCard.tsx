@@ -15,6 +15,8 @@ export interface EventCardEvent {
   groupName?: string | null;
   arrivalDate: string | null;
   departureDate: string | null;
+  nights: number | null;
+  isPotluck: boolean;
   rsvpCount: number;
   userRsvpStatus: string | null;
 }
@@ -35,6 +37,38 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function getCountdownLabel(
+  arrivalDate: string,
+  departureDate: string | null
+): { label: string; variant: "future" | "today" | "happening" | "past" } {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const arrival = new Date(arrivalDate);
+  const arrivalDay = new Date(arrival.getFullYear(), arrival.getMonth(), arrival.getDate());
+  const departure = departureDate ? new Date(departureDate) : null;
+  const departureDay = departure
+    ? new Date(departure.getFullYear(), departure.getMonth(), departure.getDate())
+    : arrivalDay;
+
+  if (today >= arrivalDay && today <= departureDay) {
+    return { label: "Happening now", variant: "happening" };
+  }
+
+  const diffMs = arrivalDay.getTime() - today.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    const past = Math.abs(diffDays);
+    return {
+      label: past === 1 ? "Yesterday" : `${past} days ago`,
+      variant: "past",
+    };
+  }
+  if (diffDays === 0) return { label: "Today!", variant: "today" };
+  if (diffDays === 1) return { label: "Tomorrow", variant: "future" };
+  return { label: `${diffDays} days away`, variant: "future" };
+}
+
 export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: EventCardProps) {
   const [rsvpCount, setRsvpCount] = useState(event.rsvpCount);
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus | null>(
@@ -48,6 +82,9 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
     onRsvpChange?.(newStatus, hadPreviousRsvp);
   }
 
+  const countdown =
+    event.arrivalDate ? getCountdownLabel(event.arrivalDate, event.departureDate) : null;
+
   return (
     <article className="card">
       <div className="card-header">
@@ -58,7 +95,17 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           <h3>{event.title}</h3>
         </div>
         <div className="card-right">
-          <span className="pill">{rsvpCount} RSVPs</span>
+          <div className="pills">
+            {event.isPotluck ? (
+              <span className="pill pill--potluck">Potluck</span>
+            ) : null}
+            <span className="pill">{rsvpCount} RSVPs</span>
+          </div>
+          {countdown ? (
+            <span className={`countdown countdown--${countdown.variant}`}>
+              {countdown.label}
+            </span>
+          ) : null}
           {isAdmin ? (
             <div className="card-actions">
               {onEdit ? (
@@ -100,8 +147,8 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
             <dd>{formatDate(event.arrivalDate)}</dd>
           </div>
           <div>
-            <dt>Departure</dt>
-            <dd>{event.departureDate ? formatDate(event.departureDate) : "TBD"}</dd>
+            <dt>Nights</dt>
+            <dd>{event.nights ? `${event.nights} night${event.nights === 1 ? "" : "s"}` : "—"}</dd>
           </div>
           <div>
             <dt>Location</dt>
@@ -180,6 +227,13 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           flex-shrink: 0;
         }
 
+        .pills {
+          display: flex;
+          gap: 5px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
         .card-actions {
           display: flex;
           gap: 6px;
@@ -192,6 +246,39 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           background: rgba(215, 185, 127, 0.15);
           color: #f4dcb0;
           font-size: 0.82rem;
+        }
+
+        .pill--potluck {
+          background: rgba(180, 120, 220, 0.18);
+          color: #d4a0f0;
+        }
+
+        .countdown {
+          font-size: 0.75rem;
+          padding: 3px 9px;
+          border-radius: 999px;
+          white-space: nowrap;
+        }
+
+        .countdown--future {
+          background: rgba(215, 185, 127, 0.12);
+          color: #d7b97f;
+        }
+
+        .countdown--today {
+          background: rgba(126, 200, 126, 0.18);
+          color: #7ec87e;
+        }
+
+        .countdown--happening {
+          background: rgba(126, 200, 126, 0.25);
+          color: #a0e0a0;
+          font-weight: 600;
+        }
+
+        .countdown--past {
+          background: rgba(255, 255, 255, 0.05);
+          color: #8a847a;
         }
 
         .card-desc {

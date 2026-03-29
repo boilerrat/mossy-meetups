@@ -90,6 +90,8 @@ model Event {
   mapEmbed        String?
   arrivalDate     DateTime?
   departureDate   DateTime?
+  nights          Int?
+  isPotluck       Boolean          @default(false)
   rsvps           RSVP[]
   dateProposals   DateProposal[]
   locationOptions LocationOption[]

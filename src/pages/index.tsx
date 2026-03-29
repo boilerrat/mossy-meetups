@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth/next";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { FormEvent, useState } from "react";
 
+import { useEffect } from "react";
+
 import { authOptions } from "../lib/auth";
 import { getHomePageData } from "../lib/home-data";
 import { AppShell } from "../components/AppShell";
@@ -23,7 +25,8 @@ const initialEventForm = {
   mapLink: "",
   mapEmbed: "",
   arrivalDate: "",
-  departureDate: "",
+  nights: "",
+  isPotluck: false,
 };
 
 // Extract the src URL from a Google Maps iframe embed snippet.
@@ -66,8 +69,15 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
   const [editingType, setEditingType] = useState<"event" | "group" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editEventForm, setEditEventForm] = useState({ ...initialEventForm });
+  const [rsvpFilter, setRsvpFilter] = useState<"all" | "mine">("all");
   const [editGroupForm, setEditGroupForm] = useState({ name: "" });
   const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
+
+  // Restore RSVP filter preference from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("rsvpFilter");
+    if (stored === "mine" || stored === "all") setRsvpFilter(stored);
+  }, []);
 
   // Local state for live RSVP count updates
   const [localUpcoming, setLocalUpcoming] = useState(upcomingEvents);
@@ -97,7 +107,8 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
       mapLink: event.mapLink || "",
       mapEmbed: event.mapEmbed || "",
       arrivalDate: event.arrivalDate ? isoToDatetimeLocal(event.arrivalDate) : "",
-      departureDate: event.departureDate ? isoToDatetimeLocal(event.departureDate) : "",
+      nights: event.nights?.toString() || "",
+      isPotluck: event.isPotluck,
     });
     setEditState({ loading: false, error: null });
   }
@@ -198,7 +209,14 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
 
   const sidebarGroups = groups.map((g) => ({ id: g.id, name: g.name }));
 
-  const scheduledEvents: WeekEvent[] = localUpcoming.map((e) => ({
+  const filteredUpcoming =
+    rsvpFilter === "mine"
+      ? localUpcoming.filter(
+          (e) => e.userRsvpStatus !== null && e.userRsvpStatus !== "NOT_ATTENDING"
+        )
+      : localUpcoming;
+
+  const scheduledEvents: WeekEvent[] = filteredUpcoming.map((e) => ({
     id: e.id,
     title: e.title,
     groupName: e.groupName,
@@ -337,12 +355,26 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                   onChange={(v) => setEventForm((f) => ({ ...f, arrivalDate: v }))}
                   placeholder="TBD — leave blank to vote later"
                 />
-                <DatePicker
-                  label="Departure"
-                  value={eventForm.departureDate}
-                  onChange={(v) => setEventForm((f) => ({ ...f, departureDate: v }))}
-                />
+                <label>
+                  How many nights?
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={eventForm.nights}
+                    onChange={(e) => setEventForm((f) => ({ ...f, nights: e.target.value }))}
+                    placeholder="e.g. 3"
+                  />
+                </label>
               </div>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={eventForm.isPotluck}
+                  onChange={(e) => setEventForm((f) => ({ ...f, isPotluck: e.target.checked }))}
+                />
+                Potluck — everyone brings a dish
+              </label>
               {eventState.error ? <p className="form-error">{eventState.error}</p> : null}
               <button type="submit" disabled={eventState.loading || groups.length === 0}>
                 {eventState.loading ? "Creating…" : "Create event"}
@@ -360,31 +392,57 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                 <p className="panel-label">Upcoming events</p>
                 <h2>What&apos;s on the calendar</h2>
               </div>
-              <div className="view-toggle">
-                <button
-                  type="button"
-                  className={`view-btn ${viewMode === "week" ? "view-btn--active" : ""}`}
-                  onClick={() => setViewMode("week")}
-                >
-                  Week
-                </button>
-                <button
-                  type="button"
-                  className={`view-btn ${viewMode === "list" ? "view-btn--active" : ""}`}
-                  onClick={() => setViewMode("list")}
-                >
-                  List
-                </button>
+              <div className="panel-controls">
+                <div className="view-toggle">
+                  <button
+                    type="button"
+                    className={`view-btn ${viewMode === "week" ? "view-btn--active" : ""}`}
+                    onClick={() => setViewMode("week")}
+                  >
+                    Week
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-btn ${viewMode === "list" ? "view-btn--active" : ""}`}
+                    onClick={() => setViewMode("list")}
+                  >
+                    List
+                  </button>
+                </div>
+                <div className="view-toggle">
+                  <button
+                    type="button"
+                    className={`view-btn ${rsvpFilter === "all" ? "view-btn--active" : ""}`}
+                    onClick={() => {
+                      setRsvpFilter("all");
+                      localStorage.setItem("rsvpFilter", "all");
+                    }}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-btn ${rsvpFilter === "mine" ? "view-btn--active" : ""}`}
+                    onClick={() => {
+                      setRsvpFilter("mine");
+                      localStorage.setItem("rsvpFilter", "mine");
+                    }}
+                  >
+                    My RSVPs
+                  </button>
+                </div>
               </div>
             </div>
 
-            {localUpcoming.length === 0 ? (
-              <p className="empty-state">No confirmed events yet.</p>
+            {filteredUpcoming.length === 0 ? (
+              <p className="empty-state">
+                {rsvpFilter === "mine" ? "No events you've responded to yet." : "No confirmed events yet."}
+              </p>
             ) : viewMode === "week" ? (
               <WeekView events={scheduledEvents} />
             ) : (
               <div className="event-list">
-                {localUpcoming.map((event) => (
+                {filteredUpcoming.map((event) => (
                   <EventCard
                     key={event.id}
                     event={event as EventCardEvent}
@@ -503,12 +561,26 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                   onChange={(v) => setEditEventForm((f) => ({ ...f, arrivalDate: v }))}
                   placeholder="TBD — leave blank to vote later"
                 />
-                <DatePicker
-                  label="Departure"
-                  value={editEventForm.departureDate}
-                  onChange={(v) => setEditEventForm((f) => ({ ...f, departureDate: v }))}
-                />
+                <label>
+                  How many nights?
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={editEventForm.nights}
+                    onChange={(e) => setEditEventForm((f) => ({ ...f, nights: e.target.value }))}
+                    placeholder="e.g. 3"
+                  />
+                </label>
               </div>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={editEventForm.isPotluck}
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, isPotluck: e.target.checked }))}
+                />
+                Potluck — everyone brings a dish
+              </label>
               {editState.error ? <p className="form-error">{editState.error}</p> : null}
               <div className="modal-actions">
                 <button type="button" className="btn-ghost" onClick={closeModal}>Cancel</button>
@@ -634,6 +706,14 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           font-size: 1.2rem;
         }
 
+        .panel-controls {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          align-items: flex-end;
+          flex-shrink: 0;
+        }
+
         .view-toggle {
           display: flex;
           gap: 4px;
@@ -757,6 +837,21 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           color: #f0a090;
           margin: 0;
           font-size: 0.9rem;
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.95rem;
+          color: #e6dfd0;
+          cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+          width: auto;
+          accent-color: #d7b97f;
+          cursor: pointer;
         }
 
         /* Modal */

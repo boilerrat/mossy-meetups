@@ -77,6 +77,10 @@ export default function EventPage({
               <p className="description">{event.description}</p>
             ) : null}
 
+            {event.isPotluck ? (
+              <span className="potluck-badge">Potluck</span>
+            ) : null}
+
             {isTbd ? (
               <div className="tbd-notice">
                 <span className="tbd-badge">Needs a date</span>
@@ -90,8 +94,12 @@ export default function EventPage({
                     <dd>{formatDate(event.arrivalDate)}</dd>
                   </div>
                   <div>
-                    <dt>Departure</dt>
-                    <dd>{event.departureDate ? formatDate(event.departureDate) : "TBD"}</dd>
+                    <dt>Nights</dt>
+                    <dd>
+                      {event.nights
+                        ? `${event.nights} night${event.nights === 1 ? "" : "s"}`
+                        : "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt>Location</dt>
@@ -142,6 +150,7 @@ export default function EventPage({
                 members={members as MemberData[]}
                 currentUserId={userId}
                 isAdmin={isAdmin}
+                nights={event.nights}
                 onDateConfirmed={refreshPage}
               />
             </section>
@@ -318,6 +327,18 @@ export default function EventPage({
           color: #c9c2b3;
           margin: 0 0 18px;
           line-height: 1.6;
+        }
+
+        .potluck-badge {
+          display: inline-block;
+          font-size: 0.72rem;
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: rgba(180, 120, 220, 0.18);
+          color: #d4a0f0;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin: 0 0 12px;
         }
 
         .tbd-notice {
@@ -588,6 +609,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         mapEmbed: event.mapEmbed,
         arrivalDate: event.arrivalDate?.toISOString() ?? null,
         departureDate: event.departureDate?.toISOString() ?? null,
+        nights: event.nights ?? null,
+        isPotluck: event.isPotluck,
         groupId: event.groupId,
         groupName: event.group.name,
         rsvpCount: event.rsvps.length,

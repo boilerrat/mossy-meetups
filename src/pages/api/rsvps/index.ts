@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
+import { randomUUID } from "crypto";
 import { authOptions } from "../../../lib/auth";
 import { getPrismaClient } from "../../../lib/prisma";
 import { withRateLimit } from "../../../lib/rate-limit";
@@ -36,12 +37,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    include: {
+    select: {
+      id: true,
+      groupId: true,
       group: {
-        include: {
-          invites: {
-            where: { userId: session.user.id, usedAt: { not: null } },
-          },
+        select: {
+          adminId: true,
         },
       },
     },
@@ -51,16 +52,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(404).json({ error: "Event not found" });
   }
 
-  const isGroupAdmin = event.group.adminId === session.user.id;
-  const isGroupMember = event.group.invites.length > 0;
+  const userId = session.user.id;
+  const groupId = event.groupId;
+  const isGroupAdmin = event.group.adminId === userId;
 
-  if (!isGroupAdmin && !isGroupMember) {
-    return res.status(403).json({ error: "Not a member of this group" });
+  // Auto-join: if RSVPing ATTENDING or MAYBE and not already a member, create an invite record
+  if (!isGroupAdmin && (status === "ATTENDING" || status === "MAYBE")) {
+    const existingMembership = await prisma.invite.findFirst({
+      where: { groupId, userId, usedAt: { not: null } },
+    });
+
+    if (!existingMembership) {
+      await prisma.invite.create({
+        data: {
+          groupId,
+          userId,
+          email: session.user.email!,
+          token: randomUUID(),
+          expiresAt: new Date(),
+          usedAt: new Date(),
+        },
+      });
+    }
   }
 
   const rsvp = await prisma.rSVP.upsert({
-    where: { userId_eventId: { userId: session.user.id, eventId } },
-    create: { userId: session.user.id, eventId, status: status as RSVPStatus },
+    where: { userId_eventId: { userId, eventId } },
+    create: { userId, eventId, status: status as RSVPStatus },
     update: { status: status as RSVPStatus },
   });
 

@@ -11,7 +11,8 @@ type UpdateEventPayload = {
   mapLink?: string;
   mapEmbed?: string;
   arrivalDate?: string;
-  departureDate?: string;
+  nights?: number | string;
+  isPotluck?: boolean;
 };
 
 function parseDate(value?: string): Date | null {
@@ -70,8 +71,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if ("location" in payload) data.location = payload.location?.trim() || null;
     if ("mapLink" in payload) data.mapLink = payload.mapLink?.trim() || null;
     if ("mapEmbed" in payload) data.mapEmbed = payload.mapEmbed?.trim() || null;
-    if ("arrivalDate" in payload) data.arrivalDate = parseDate(payload.arrivalDate);
-    if ("departureDate" in payload) data.departureDate = parseDate(payload.departureDate);
+    if ("isPotluck" in payload) data.isPotluck = Boolean(payload.isPotluck);
+
+    if ("arrivalDate" in payload || "nights" in payload) {
+      const nights = payload.nights ? parseInt(String(payload.nights), 10) : null;
+      const arrivalDate = "arrivalDate" in payload ? parseDate(payload.arrivalDate) : undefined;
+
+      if ("nights" in payload) {
+        data.nights = nights && nights > 0 ? nights : null;
+      }
+      if ("arrivalDate" in payload) {
+        data.arrivalDate = arrivalDate ?? null;
+      }
+
+      // Recalculate departureDate whenever either arrivalDate or nights changes
+      const effectiveArrival = arrivalDate ?? null;
+      const effectiveNights = nights && nights > 0 ? nights : null;
+      if (effectiveArrival && effectiveNights) {
+        data.departureDate = new Date(
+          effectiveArrival.getTime() + effectiveNights * 24 * 60 * 60 * 1000
+        );
+      } else if ("arrivalDate" in payload || "nights" in payload) {
+        data.departureDate = null;
+      }
+    }
 
     const updated = await prisma.event.update({ where: { id }, data });
 
