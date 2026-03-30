@@ -80,7 +80,7 @@ export function GroupSidebar({ groups }: GroupSidebarProps) {
           gap: 10px;
         }
 
-        .sidebar-item {
+        :global(a.sidebar-item) {
           display: flex;
           align-items: center;
           min-height: 44px;
@@ -100,7 +100,7 @@ export function GroupSidebar({ groups }: GroupSidebarProps) {
           line-height: 1.3;
         }
 
-        .sidebar-item:hover {
+        :global(a.sidebar-item:hover) {
           transform: translateY(-1px);
           border-color: rgba(215, 185, 127, 0.38);
           background:
@@ -110,7 +110,7 @@ export function GroupSidebar({ groups }: GroupSidebarProps) {
           color: #fff4de;
         }
 
-        .sidebar-item--active {
+        :global(a.sidebar-item--active) {
           border-color: rgba(215, 185, 127, 0.5);
           background:
             linear-gradient(135deg, rgba(215, 185, 127, 0.24), rgba(185, 133, 69, 0.16)),

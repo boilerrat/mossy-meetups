@@ -318,7 +318,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           letter-spacing: 0.06em;
         }
 
-        .tbd-vote-link {
+        :global(a.tbd-vote-link) {
           display: inline-flex;
           align-items: center;
           font-size: 0.78rem;
@@ -331,7 +331,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           transition: opacity 0.15s;
         }
 
-        .tbd-vote-link:hover {
+        :global(a.tbd-vote-link:hover) {
           opacity: 0.88;
         }
 
@@ -353,7 +353,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           font-size: 0.9rem;
         }
 
-        .map-link {
+        :global(a.map-link) {
           display: inline-block;
           font-size: 0.88rem;
           color: #f4dcb0;
@@ -384,7 +384,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           border-top: 1px solid rgba(243, 235, 220, 0.08);
         }
 
-        .detail-link {
+        :global(a.detail-link) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -405,7 +405,7 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
           transition: transform 0.15s, color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
         }
 
-        .detail-link:hover {
+        :global(a.detail-link:hover) {
           transform: translateY(-1px);
           color: #fff5df;
           border-color: rgba(215, 185, 127, 0.52);

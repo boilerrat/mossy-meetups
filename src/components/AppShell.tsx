@@ -101,7 +101,7 @@ export function AppShell({ children, title, groups }: AppShellProps) {
           box-shadow: var(--shadow-nav);
         }
 
-        .nav-brand {
+        :global(a.nav-brand) {
           text-decoration: none;
           display: flex;
           align-items: center;
@@ -114,7 +114,7 @@ export function AppShell({ children, title, groups }: AppShellProps) {
           gap: 12px;
         }
 
-        .nav-link {
+        :global(a.nav-link) {
           min-width: 36px;
           height: 36px;
           padding: 0 10px;
@@ -131,14 +131,14 @@ export function AppShell({ children, title, groups }: AppShellProps) {
           align-items: center;
         }
 
-        .nav-link:hover {
+        :global(a.nav-link:hover) {
           transform: translateY(-1px);
           border-color: rgba(215, 185, 127, 0.26);
           background: rgba(243, 235, 220, 0.06);
           color: var(--accent-hover);
         }
 
-        .nav-user {
+        :global(a.nav-user) {
           display: inline-flex;
           align-items: center;
           min-height: 38px;
@@ -155,7 +155,7 @@ export function AppShell({ children, title, groups }: AppShellProps) {
           transition: transform 0.15s, border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
         }
 
-        .nav-user:hover {
+        :global(a.nav-user:hover) {
           transform: translateY(-1px);
           color: var(--text);
           border-color: rgba(215, 185, 127, 0.48);

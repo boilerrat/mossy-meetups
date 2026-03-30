@@ -79,7 +79,7 @@ export function GroupCard({ group, userId, onEdit, onDelete }: GroupCardProps) {
           font-size: 1rem;
         }
 
-        .group-link {
+        :global(a.group-link) {
           display: inline-flex;
           align-items: center;
           min-height: 40px;
@@ -96,7 +96,7 @@ export function GroupCard({ group, userId, onEdit, onDelete }: GroupCardProps) {
           transition: transform 0.15s, border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
         }
 
-        .group-link:hover {
+        :global(a.group-link:hover) {
           transform: translateY(-1px);
           border-color: rgba(215, 185, 127, 0.5);
           background:
