@@ -71,6 +71,15 @@ const FAQS: Array<{ q: string; a: string | string[] }> = [
     ],
   },
   {
+    q: "Does each event have its own discussion thread?",
+    a: [
+      "Yes. Open any event detail page and scroll to the **Camp thread** panel.",
+      "Every event has one flat conversation thread that stays with it while dates and locations are being decided and after the event is confirmed.",
+      "All event members can post messages.",
+      "You can edit or delete your own messages, and the group admin can moderate the whole thread.",
+    ],
+  },
+  {
     q: "What does 'Maybe' mean for headcount?",
     a: "Maybe counts toward the displayed RSVP total so organisers know to plan for you, but it flags your response as uncertain. The event admin can see the breakdown (Going / Maybe / Can't go) on the event detail page.",
   },

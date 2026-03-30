@@ -10,6 +10,7 @@ Mossy Meetups is a private planning app for friend groups and families who camp 
 - schedule events or leave them TBD
 - vote on dates and locations
 - RSVP and track attendance
+- keep an event-specific planning thread
 - view events in list, rolling week, or month layouts
 - export individual events or the full schedule to calendar
 - check trip weather at a glance
@@ -63,6 +64,7 @@ Mossy Meetups is a private planning app for friend groups and families who camp 
   - RSVP
   - date voting
   - location voting
+  - discussion thread
   - map link/embed
   - `.ics` download for that event
 

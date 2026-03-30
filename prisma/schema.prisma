@@ -31,6 +31,7 @@ model User {
   dateVotes       DateVote[]
   locationOptions LocationOption[]
   locationVotes   LocationVote[]
+  eventComments   EventComment[]
   createdAt       DateTime         @default(now())
 }
 
@@ -96,7 +97,19 @@ model Event {
   dateProposals   DateProposal[]
   locationOptions LocationOption[]
   locationVotes   LocationVote[]
+  comments        EventComment[]
   createdAt       DateTime         @default(now())
+}
+
+model EventComment {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DateProposal {

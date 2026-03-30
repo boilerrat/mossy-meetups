@@ -9,6 +9,7 @@ import { getPrismaClient } from "../../lib/prisma";
 import { RSVPButton, type RSVPStatus } from "../../components/RSVPButton";
 import { AppShell } from "../../components/AppShell";
 import { DateVoteGrid, type DateProposalData, type MemberData } from "../../components/DateVoteGrid";
+import { DiscussionPanel, type EventCommentView } from "../../components/DiscussionPanel";
 import { LocationPoll, type LocationOptionData } from "../../components/LocationPoll";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
@@ -34,6 +35,7 @@ export default function EventPage({
   isAdmin,
   dateProposals,
   locationOptions,
+  comments,
   userLocationVoteId,
   members,
   sidebarGroups,
@@ -250,6 +252,13 @@ export default function EventPage({
               </div>
             )}
           </section>
+
+          <DiscussionPanel
+            eventId={event.id}
+            comments={comments as EventCommentView[]}
+            currentUserId={userId}
+            isAdmin={isAdmin}
+          />
         </div>
 
         {/* RSVP sidebar */}
@@ -560,6 +569,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           },
           orderBy: { createdAt: "asc" },
         },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
         locationVotes: {
           where: { userId: session.user.id },
           select: { locationOptionId: true },
@@ -631,6 +652,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         votes: o.votes.map((v) => ({ userId: v.userId })),
       })),
       members,
+      comments: event.comments.map((comment) => ({
+        id: comment.id,
+        body: comment.body,
+        createdAt: comment.createdAt.toISOString(),
+        updatedAt: comment.updatedAt.toISOString(),
+        authorId: comment.userId,
+        authorName: comment.user.name || comment.user.email,
+        authorEmail: comment.user.email,
+      })),
       event: {
         id: event.id,
         title: event.title,

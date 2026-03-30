@@ -30,6 +30,7 @@ Mossy Meetups currently supports:
 - event and all-events `.ics` export
 - list, rolling week, and month homepage calendar views
 - Celsius-first multi-day weather previews
+- per-event discussion threads
 - Docker/Dokploy deployment via a custom production server
 - self-contained local E2E testing with isolated Postgres + MailHog
 
@@ -136,45 +137,45 @@ Mossy Meetups currently supports:
 
 ---
 
-## Phase 5 — Communications Threads
+## Phase 5 — Communications Threads ✓
 **Goal:** Every event gets one simple conversation space that stays with it through planning, voting, and the trip itself.
 
 ### MVP shape
 
-- [ ] One flat discussion thread per event
-- [ ] Available on all event states:
-  - [ ] TBD date
-  - [ ] date confirmed / location vote active
-  - [ ] fully confirmed event
-- [ ] Chronological comments, no nested replies in MVP
-- [ ] Event members/admin can read and post
-- [ ] Comment authors can edit/delete their own messages
-- [ ] Group admin can moderate/delete any event comment
+- [x] One flat discussion thread per event
+- [x] Available on all event states:
+  - [x] TBD date
+  - [x] date confirmed / location vote active
+  - [x] fully confirmed event
+- [x] Chronological comments, no nested replies in MVP
+- [x] Event members/admin can read and post
+- [x] Comment authors can edit/delete their own messages
+- [x] Group admin can moderate/delete any event comment
 
 ### Backend steps
 
-- [ ] Add `EventComment` model to Prisma schema
+- [x] Add `EventComment` model to Prisma schema
   - Fields: `id`, `eventId`, `userId`, `body`, `createdAt`, `updatedAt`
-- [ ] Add relation from `Event` to `EventComment`
-- [ ] Add relation from `User` to `EventComment`
-- [ ] Create Prisma migration
-- [ ] Add event-membership guard helpers for discussion APIs if current membership checks are duplicated
+- [x] Add relation from `Event` to `EventComment`
+- [x] Add relation from `User` to `EventComment`
+- [x] Create Prisma migration
+- [x] Reuse event-membership guard helpers for discussion APIs
 
 ### API steps
 
-- [ ] `GET /api/events/[id]/comments`
-- [ ] `POST /api/events/[id]/comments`
-- [ ] `PATCH /api/events/[id]/comments/[commentId]`
-- [ ] `DELETE /api/events/[id]/comments/[commentId]`
-- [ ] Validate body length and trim empty messages
+- [x] `GET /api/events/[id]/comments`
+- [x] `POST /api/events/[id]/comments`
+- [x] `PATCH /api/events/[id]/comments/[commentId]`
+- [x] `DELETE /api/events/[id]/comments/[commentId]`
+- [x] Validate body length and trim empty messages
 
 ### UI steps
 
-- [ ] Add `Discussion` panel to the event detail page
-- [ ] Render author name, timestamp, and message body
-- [ ] Add composer textarea + submit button
-- [ ] Empty state copy for events with no comments yet
-- [ ] Mobile-safe spacing and scrolling behavior
+- [x] Add `Discussion` panel to the event detail page
+- [x] Render author name, timestamp, and message body
+- [x] Add composer textarea + submit button
+- [x] Empty state copy for events with no comments yet
+- [x] Mobile-safe spacing and scrolling behavior
 
 ### Post-MVP candidates
 
@@ -205,6 +206,7 @@ Mossy Meetups currently supports:
   - [x] confirmed-location vs location-vote-option validation
   - [x] weather forecast multi-day endpoint behavior
   - [x] current RSVP auto-join behavior
+  - [x] discussion-thread API behavior
 - [x] Refreshed data-layer tests for homepage serialization, including location option names used by edit forms and location-vote cards
 - [x] Refreshed Playwright coverage for:
   - [x] unauthenticated redirect behavior
@@ -225,7 +227,6 @@ Mossy Meetups currently supports:
 
 - [ ] Expand API tests to cover:
   - [ ] all-events calendar export
-  - [ ] discussion-thread APIs once Phase 5 starts
 - [ ] Expand data-layer tests to cover homepage event splitting:
   - [ ] needs-a-location coverage explicitly
 - [ ] Add component-level tests for:
@@ -271,5 +272,5 @@ Mossy Meetups currently supports:
 When execution resumes, work in this order:
 
 1. Expand the refreshed test suite into the remaining UI and export gaps.
-2. Start Phase 5 discussion threads with the flat per-event model.
-3. Re-run full verification after the first discussion-thread milestone lands.
+2. Expand test coverage into the remaining dashboard, export, and component gaps.
+3. Re-run full verification after the next milestone lands.
