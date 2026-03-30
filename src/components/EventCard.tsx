@@ -385,20 +385,34 @@ export function EventCard({ event, userId, onEdit, onDelete, onRsvpChange }: Eve
         }
 
         .detail-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          padding: 0 16px;
+          border-radius: 999px;
+          border: 1px solid rgba(215, 185, 127, 0.32);
+          background:
+            linear-gradient(135deg, rgba(215, 185, 127, 0.18), rgba(185, 133, 69, 0.08)),
+            rgba(9, 18, 15, 0.7);
           font-size: 0.82rem;
-          color: #d7b97f;
+          color: #f5e6cb;
           text-decoration: none;
           white-space: nowrap;
           flex-shrink: 0;
-          font-weight: 600;
-          border-bottom: 1px solid rgba(215, 185, 127, 0.35);
-          padding-bottom: 1px;
-          transition: color 0.15s, border-color 0.15s;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          transition: transform 0.15s, color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
         }
 
         .detail-link:hover {
-          color: #f4dcb0;
-          border-bottom-color: rgba(244, 220, 176, 0.7);
+          transform: translateY(-1px);
+          color: #fff5df;
+          border-color: rgba(215, 185, 127, 0.52);
+          background:
+            linear-gradient(135deg, rgba(215, 185, 127, 0.28), rgba(185, 133, 69, 0.16)),
+            rgba(11, 22, 17, 0.9);
+          box-shadow: 0 12px 22px rgba(0, 0, 0, 0.16);
         }
 
         .btn-icon {

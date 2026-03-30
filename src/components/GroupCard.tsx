@@ -80,18 +80,36 @@ export function GroupCard({ group, userId, onEdit, onDelete }: GroupCardProps) {
         }
 
         .group-link {
-          color: #f3ebdc;
+          display: inline-flex;
+          align-items: center;
+          min-height: 40px;
+          padding: 0 16px;
+          border-radius: 999px;
+          border: 1px solid rgba(215, 185, 127, 0.28);
+          background:
+            linear-gradient(135deg, rgba(215, 185, 127, 0.18), rgba(185, 133, 69, 0.08)),
+            rgba(9, 18, 15, 0.76);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+          color: #f8ead1;
           text-decoration: none;
+          font-weight: 700;
+          transition: transform 0.15s, border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
         }
 
         .group-link:hover {
-          color: #d7b97f;
+          transform: translateY(-1px);
+          border-color: rgba(215, 185, 127, 0.5);
+          background:
+            linear-gradient(135deg, rgba(215, 185, 127, 0.3), rgba(185, 133, 69, 0.16)),
+            rgba(11, 22, 17, 0.92);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+          color: #fff6e4;
         }
 
         .card-meta {
           font-size: 0.85rem;
           color: #c9c2b3;
-          margin: 0;
+          margin: 10px 0 0;
         }
 
         .card-right {

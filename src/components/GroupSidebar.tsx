@@ -77,30 +77,46 @@ export function GroupSidebar({ groups }: GroupSidebarProps) {
           padding: 0;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 10px;
         }
 
         .sidebar-item {
-          display: block;
-          padding: 8px 12px;
-          border-radius: 10px;
-          font-size: 0.9rem;
-          color: #c9c2b3;
+          display: flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 10px 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(243, 235, 220, 0.12);
+          background:
+            linear-gradient(180deg, rgba(243, 235, 220, 0.05), rgba(243, 235, 220, 0.02)),
+            rgba(8, 18, 14, 0.55);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: #f3ebdc;
           text-decoration: none;
-          transition: background 0.15s, color 0.15s;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          transition: transform 0.15s, border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+          white-space: normal;
+          line-height: 1.3;
         }
 
         .sidebar-item:hover {
-          background: rgba(243, 235, 220, 0.07);
-          color: #f3ebdc;
+          transform: translateY(-1px);
+          border-color: rgba(215, 185, 127, 0.38);
+          background:
+            linear-gradient(180deg, rgba(215, 185, 127, 0.16), rgba(215, 185, 127, 0.06)),
+            rgba(10, 21, 17, 0.88);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+          color: #fff4de;
         }
 
         .sidebar-item--active {
-          background: rgba(215, 185, 127, 0.15);
-          color: #f4dcb0;
+          border-color: rgba(215, 185, 127, 0.5);
+          background:
+            linear-gradient(135deg, rgba(215, 185, 127, 0.24), rgba(185, 133, 69, 0.16)),
+            rgba(10, 21, 17, 0.95);
+          color: #fff0cb;
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
         }
       `}</style>
     </aside>

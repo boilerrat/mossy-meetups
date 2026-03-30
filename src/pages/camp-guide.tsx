@@ -135,7 +135,7 @@ const RAINY_DAY = [
 
 const ETIQUETTE = [
   {
-    commandment: "I. Thou shalt observe quiet hours",
+    commandment: "I. Thou shalt read the room and observe quiet hours if we will get complaints",
     rule: "10 PM to 7 AM. Voices low, music off. Other people's tents are closer than they feel.",
   },
   {
