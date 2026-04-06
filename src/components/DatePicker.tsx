@@ -41,25 +41,22 @@ function toDatetimeLocal(year: number, month: number, day: number, hour: number,
 }
 
 function buildCalendarDays(year: number, month: number): Array<{ day: number; month: number; year: number; otherMonth: boolean }> {
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthDays = new Date(year, month, 0).getDate();
 
   const cells: Array<{ day: number; month: number; year: number; otherMonth: boolean }> = [];
 
-  // Days from prev month
   for (let i = firstDay - 1; i >= 0; i--) {
     const d = prevMonthDays - i;
     const [m, y] = month === 0 ? [11, year - 1] : [month - 1, year];
     cells.push({ day: d, month: m, year: y, otherMonth: true });
   }
 
-  // Days in this month
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ day: d, month, year, otherMonth: false });
   }
 
-  // Days from next month to fill last row
   const remainder = cells.length % 7;
   if (remainder !== 0) {
     for (let d = 1; d <= 7 - remainder; d++) {
@@ -83,7 +80,6 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Keep time inputs in sync with the selected value
   useEffect(() => {
     if (parsed) {
       setHour(parsed.hour);
@@ -154,21 +150,18 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
           onClick={(e) => { if (e.target === overlayRef.current) setOpen(false); }}
         >
           <div className="dp-modal">
-            {/* Month navigation */}
             <div className="dp-month-nav">
               <button type="button" className="dp-arrow" onClick={prevMonth} aria-label="Previous month">←</button>
               <span className="dp-month-label">{MONTHS[viewMonth]} {viewYear}</span>
               <button type="button" className="dp-arrow" onClick={nextMonth} aria-label="Next month">→</button>
             </div>
 
-            {/* Day headers */}
             <div className="dp-grid dp-header-row">
               {DAY_HEADERS.map((d) => (
                 <span key={d} className="dp-day-header">{d}</span>
               ))}
             </div>
 
-            {/* Day cells */}
             <div className="dp-grid">
               {cells.map((cell, i) => (
                 <button
@@ -187,7 +180,6 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
               ))}
             </div>
 
-            {/* Time picker */}
             <div className="dp-time">
               <span className="dp-time-label">Time</span>
               <div className="dp-time-inputs">
@@ -214,7 +206,6 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
               </div>
             </div>
 
-            {/* Actions */}
             <div className="dp-actions">
               <button type="button" className="dp-btn dp-btn-ghost" onClick={clearValue}>
                 Clear
@@ -241,11 +232,11 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
 
         .dp-label {
           font-size: 0.95rem;
-          color: #e6dfd0;
+          color: var(--text);
         }
 
         .dp-required {
-          color: #d7b97f;
+          color: var(--accent);
         }
 
         .dp-trigger {
@@ -253,20 +244,20 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
           font-size: 0.95rem;
           width: 100%;
           text-align: left;
-          border: 1px solid rgba(243, 235, 220, 0.14);
+          border: 1px solid var(--border);
           border-radius: 16px;
-          background: rgba(5, 11, 9, 0.5);
-          color: #f3ebdc;
+          background: var(--bg-input);
+          color: var(--text);
           padding: 12px 14px;
           cursor: pointer;
         }
 
         .dp-trigger--empty {
-          color: #8a847a;
+          color: var(--text-dim);
         }
 
         .dp-trigger:hover {
-          border-color: rgba(243, 235, 220, 0.28);
+          border-color: var(--border-strong);
         }
 
         .dp-overlay {
@@ -283,8 +274,8 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
 
         .dp-modal {
           width: 300px;
-          border: 1px solid rgba(243, 235, 220, 0.12);
-          background: #0d1c17;
+          border: 1px solid var(--border);
+          background: var(--bg-card);
           border-radius: 24px;
           padding: 20px;
           box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
@@ -299,9 +290,9 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
 
         .dp-arrow {
           font-family: inherit;
-          background: rgba(243, 235, 220, 0.07);
+          background: var(--bg-input);
           border: 0;
-          color: #c9c2b3;
+          color: var(--text-muted);
           border-radius: 8px;
           padding: 4px 10px;
           cursor: pointer;
@@ -309,14 +300,14 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
         }
 
         .dp-arrow:hover {
-          background: rgba(243, 235, 220, 0.12);
-          color: #f3ebdc;
+          background: var(--border);
+          color: var(--text);
         }
 
         .dp-month-label {
           font-size: 0.95rem;
           font-weight: 600;
-          color: #f3ebdc;
+          color: var(--text);
         }
 
         .dp-grid {
@@ -333,7 +324,7 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
         .dp-day-header {
           text-align: center;
           font-size: 0.72rem;
-          color: #8a847a;
+          color: var(--text-dim);
           text-transform: uppercase;
           letter-spacing: 0.06em;
           padding: 2px 0;
@@ -347,37 +338,39 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
           border: 0;
           border-radius: 8px;
           background: transparent;
-          color: #d4d0c7;
+          color: var(--text);
           cursor: pointer;
         }
 
         .dp-cell:hover {
-          background: rgba(215, 185, 127, 0.15);
-          color: #f4dcb0;
+          background: var(--border);
+          color: var(--text);
         }
 
         .dp-cell--selected {
-          background: linear-gradient(135deg, #d7b97f, #b98545);
-          color: #10231d;
+          background: var(--accent);
+          color: var(--bg);
           font-weight: 700;
         }
 
         .dp-cell--selected:hover {
-          background: linear-gradient(135deg, #e0c48a, #c49550);
-          color: #10231d;
+          background: var(--accent);
+          color: var(--bg);
         }
 
         .dp-cell--today:not(.dp-cell--selected) {
-          border: 1px solid rgba(215, 185, 127, 0.4);
-          color: #f4dcb0;
+          border: 1px solid var(--border-focus);
+          color: var(--text);
         }
 
         .dp-cell--other {
-          color: #4a4640;
+          color: var(--text-dim);
+          opacity: 0.5;
         }
 
         .dp-cell--other:hover {
-          color: #8a847a;
+          color: var(--text-muted);
+          opacity: 1;
         }
 
         .dp-time {
@@ -387,13 +380,13 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
           gap: 10px;
           margin: 14px 0;
           padding: 12px;
-          background: rgba(0, 0, 0, 0.2);
+          background: var(--bg-input);
           border-radius: 12px;
         }
 
         .dp-time-label {
           font-size: 0.82rem;
-          color: #8a847a;
+          color: var(--text-dim);
           text-transform: uppercase;
           letter-spacing: 0.08em;
         }
@@ -409,15 +402,15 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
           font-family: inherit;
           font-size: 0.95rem;
           text-align: center;
-          border: 1px solid rgba(243, 235, 220, 0.14);
+          border: 1px solid var(--border);
           border-radius: 8px;
-          background: rgba(5, 11, 9, 0.5);
-          color: #f3ebdc;
+          background: var(--bg-card);
+          color: var(--text);
           padding: 6px 4px;
         }
 
         .dp-time-sep {
-          color: #8a847a;
+          color: var(--text-dim);
           font-weight: 700;
         }
 
@@ -440,18 +433,18 @@ export function DatePicker({ label, value, onChange, required, placeholder = "Pi
 
         .dp-btn-ghost {
           background: transparent;
-          border: 1px solid rgba(243, 235, 220, 0.2);
-          color: #c9c2b3;
+          border: 1px solid var(--border-strong);
+          color: var(--text-muted);
         }
 
         .dp-btn-ghost:hover {
-          border-color: rgba(243, 235, 220, 0.4);
-          color: #f3ebdc;
+          border-color: var(--border-focus);
+          color: var(--text);
         }
 
         .dp-btn-confirm {
-          background: linear-gradient(135deg, #d7b97f, #b98545);
-          color: #10231d;
+          background: var(--accent);
+          color: var(--bg);
         }
 
         .dp-btn-confirm:disabled {

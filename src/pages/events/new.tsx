@@ -11,6 +11,10 @@ import {
   Select,
   SelectItem,
   Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@boilerhaus-ui/boilerhaus-ui";
 
 import { getAuthOptions } from "../../lib/auth";
@@ -18,7 +22,6 @@ import { getPrismaClient } from "../../lib/prisma";
 import { hasTooManyLocationOptions } from "../../lib/location-options";
 import { AppShell } from "../../components/AppShell";
 import { DatePicker } from "../../components/DatePicker";
-import { Tooltip } from "../../components/Tooltip";
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
@@ -177,8 +180,8 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
                   value={form.locationOptions}
                   onChange={(e) => setForm((f) => ({ ...f, locationOptions: e.target.value }))}
                   placeholder="Turtle Dunes, Pine Ridge…"
-                  helperText="Comma-separated. Leave Location blank to let the group vote."
                 />
+                <span className="field-hint">Comma-separated. Leave Location blank to let the group vote.</span>
               </div>
             </div>
 
@@ -202,8 +205,8 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
                     setForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
                   }
                   placeholder="Paste Google Maps embed code"
-                  helperText="Share → Embed a map → paste the code or src= URL"
                 />
+                <span className="field-hint">Share → Embed a map → paste the code or src= URL</span>
               </div>
             </div>
 
@@ -218,18 +221,21 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
                 <Label htmlFor="ev-nights">
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                     How many nights?
-                    <Tooltip
-                      text="Departure date is calculated automatically as arrival + nights."
-                      position="top"
-                      maxWidth={240}
-                    >
-                      <span
-                        aria-label="Help"
-                        style={{ cursor: "help", fontSize: "0.8rem", color: "var(--text-dim)", lineHeight: 1 }}
-                      >
-                        ⓘ
-                      </span>
-                    </Tooltip>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            aria-label="Help"
+                            style={{ cursor: "help", fontSize: "0.8rem", color: "var(--text-dim)", lineHeight: 1 }}
+                          >
+                            ⓘ
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Departure date is calculated automatically as arrival + nights.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </span>
                 </Label>
                 <Input
@@ -322,6 +328,7 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 16px;
+          align-items: start;
         }
 
         .field-hint {
