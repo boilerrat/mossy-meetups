@@ -14,6 +14,8 @@ import {
   DialogTitle,
   Input,
   Label,
+  Radio,
+  RadioGroup,
   Stat,
   Textarea,
 } from "@boilerhaus-ui/boilerhaus-ui";
@@ -275,33 +277,32 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
             <h2>What&apos;s on the calendar</h2>
           </div>
           <div className="panel-controls">
-            <div className="view-toggle-row">
-              {(["list", "week", "month"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  className={`btn btn-sm ${viewMode === mode ? "btn-primary" : "btn-ghost"}`}
-                  onClick={() => setViewMode(mode)}
-                >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
-            </div>
-            <div className="view-toggle-row">
-              <button
-                className={`btn btn-sm ${rsvpFilter === "all" ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => { setRsvpFilter("all"); localStorage.setItem("rsvpFilter", "all"); }}
-              >
-                All
-              </button>
-              <button
-                className={`btn btn-sm ${rsvpFilter === "mine" ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => { setRsvpFilter("mine"); localStorage.setItem("rsvpFilter", "mine"); }}
-              >
-                My RSVPs
-              </button>
-            </div>
+            <RadioGroup
+              orientation="horizontal"
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as typeof viewMode)}
+            >
+              <Radio value="list" label="List" />
+              <Radio value="week" label="Week" />
+              <Radio value="month" label="Month" />
+            </RadioGroup>
+            <div className="controls-sep" />
+            <RadioGroup
+              orientation="horizontal"
+              value={rsvpFilter}
+              onValueChange={(v) => {
+                setRsvpFilter(v as typeof rsvpFilter);
+                localStorage.setItem("rsvpFilter", v);
+              }}
+            >
+              <Radio value="all" label="All" />
+              <Radio value="mine" label="My RSVPs" />
+            </RadioGroup>
             {scheduledUpcoming.length > 0 ? (
-              <CalendarExportButton href="/api/events/ics" label="Export all events" />
+              <>
+                <div className="controls-sep" />
+                <CalendarExportButton href="/api/events/ics" label="Export all events" />
+              </>
             ) : null}
           </div>
         </div>
@@ -681,11 +682,10 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           flex-shrink: 0;
         }
 
-        .view-toggle-row {
-          display: flex;
-          gap: 4px;
-          flex-shrink: 0;
-          flex-wrap: wrap;
+        .controls-sep {
+          width: 100%;
+          height: 1px;
+          background: var(--border);
         }
 
         /* ── Empty state ── */
