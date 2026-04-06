@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { FormEvent, useState } from "react";
 import {
-  Button,
   Checkbox,
   Input,
   Label,
@@ -98,9 +97,7 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
             <p className="form-sub">
               You need to be a member of a group before you can create an event.
             </p>
-            <Button asChild variant="primary">
-              <Link href="/groups/new">Create a group first</Link>
-            </Button>
+            <Link href="/groups/new" className="btn btn-primary">Create a group first</Link>
           </div>
         </div>
         <style jsx>{`
@@ -262,12 +259,10 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
             {state.error ? <p className="form-error">{state.error}</p> : null}
 
             <div className="form-actions">
-              <Button asChild variant="ghost">
-                <Link href="/">Cancel</Link>
-              </Button>
-              <Button type="submit" variant="secondary" disabled={state.loading}>
+              <Link href="/" className="btn btn-ghost">Cancel</Link>
+              <button type="submit" className="btn btn-primary" disabled={state.loading}>
                 {state.loading ? "Creating…" : "Create event"}
-              </Button>
+              </button>
             </div>
           </form>
         </div>

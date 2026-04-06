@@ -3,7 +3,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { FormEvent, useState } from "react";
-import { Button, Input, Label } from "@boilerhaus-ui/boilerhaus-ui";
+import { Input, Label } from "@boilerhaus-ui/boilerhaus-ui";
 
 import { getAuthOptions } from "../../lib/auth";
 import { getPrismaClient } from "../../lib/prisma";
@@ -61,12 +61,10 @@ export default function NewGroupPage({ sidebarGroups }: Props) {
             {state.error ? <p className="form-error">{state.error}</p> : null}
 
             <div className="form-actions">
-              <Button asChild variant="ghost">
-                <Link href="/">Cancel</Link>
-              </Button>
-              <Button type="submit" variant="primary" disabled={state.loading}>
+              <Link href="/" className="btn btn-ghost">Cancel</Link>
+              <button type="submit" className="btn btn-primary" disabled={state.loading}>
                 {state.loading ? "Creating…" : "Create group"}
-              </Button>
+              </button>
             </div>
           </form>
         </div>

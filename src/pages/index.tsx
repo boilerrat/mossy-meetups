@@ -6,7 +6,6 @@ import { FormEvent, useState } from "react";
 import { useEffect } from "react";
 
 import {
-  Button,
   Checkbox,
   Dialog,
   DialogClose,
@@ -252,12 +251,8 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           </div>
         </div>
         <div className="hero-actions">
-          <Button asChild variant="ghost">
-            <Link href="/groups/new">+ New Group</Link>
-          </Button>
-          <Button asChild variant="primary">
-            <Link href="/events/new">+ New Event</Link>
-          </Button>
+          <Link href="/groups/new" className="btn btn-ghost">+ New Group</Link>
+          <Link href="/events/new" className="btn btn-primary">+ New Event</Link>
         </div>
       </section>
 
@@ -282,28 +277,28 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           <div className="panel-controls">
             <div className="view-toggle-row">
               {(["list", "week", "month"] as const).map((mode) => (
-                <Button
+                <button
                   key={mode}
-                  variant={viewMode === mode ? "primary" : "ghost"}
+                  className={`btn btn-sm ${viewMode === mode ? "btn-primary" : "btn-ghost"}`}
                   onClick={() => setViewMode(mode)}
                 >
                   {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Button>
+                </button>
               ))}
             </div>
             <div className="view-toggle-row">
-              <Button
-                variant={rsvpFilter === "all" ? "primary" : "ghost"}
+              <button
+                className={`btn btn-sm ${rsvpFilter === "all" ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => { setRsvpFilter("all"); localStorage.setItem("rsvpFilter", "all"); }}
               >
                 All
-              </Button>
-              <Button
-                variant={rsvpFilter === "mine" ? "primary" : "ghost"}
+              </button>
+              <button
+                className={`btn btn-sm ${rsvpFilter === "mine" ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => { setRsvpFilter("mine"); localStorage.setItem("rsvpFilter", "mine"); }}
               >
                 My RSVPs
-              </Button>
+              </button>
             </div>
             {scheduledUpcoming.length > 0 ? (
               <CalendarExportButton href="/api/events/ics" label="Export all events" />
@@ -321,9 +316,7 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                 : "No confirmed events yet."}
             </p>
             {rsvpFilter !== "mine" ? (
-              <Button asChild variant="primary">
-                <Link href="/events/new">+ Schedule the first event</Link>
-              </Button>
+              <Link href="/events/new" className="btn btn-primary">+ Schedule the first event</Link>
             ) : null}
           </div>
         ) : viewMode === "list" ? (
@@ -393,9 +386,7 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
             <p className="panel-label">Groups</p>
             <h2>Current meetup hosts</h2>
           </div>
-          <Button asChild variant="ghost">
-            <Link href="/groups/new">+ New Group</Link>
-          </Button>
+          <Link href="/groups/new" className="btn btn-ghost btn-sm">+ New Group</Link>
         </div>
         {groups.length === 0 ? (
           <p className="empty-state">No groups yet.</p>
@@ -522,11 +513,11 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
             {editState.error ? <p className="form-error">{editState.error}</p> : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="secondary">Cancel</Button>
+                <button className="btn btn-ghost">Cancel</button>
               </DialogClose>
-              <Button type="submit" variant="primary" disabled={editState.loading}>
+              <button type="submit" className="btn btn-primary" disabled={editState.loading}>
                 {editState.loading ? "Saving…" : "Save changes"}
-              </Button>
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -552,11 +543,11 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
             {editState.error ? <p className="form-error">{editState.error}</p> : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="secondary">Cancel</Button>
+                <button className="btn btn-ghost">Cancel</button>
               </DialogClose>
-              <Button type="submit" variant="primary" disabled={editState.loading}>
+              <button type="submit" className="btn btn-primary" disabled={editState.loading}>
                 {editState.loading ? "Saving…" : "Save changes"}
-              </Button>
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>
