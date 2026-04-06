@@ -5,6 +5,20 @@ import { FormEvent, useState } from "react";
 
 import { useEffect } from "react";
 
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+  Input,
+  Label,
+  Stat,
+  Textarea,
+} from "@boilerhaus-ui/boilerhaus-ui";
+
 import { getAuthOptions } from "../lib/auth";
 import { getHomePageData } from "../lib/home-data";
 import { hasTooManyLocationOptions } from "../lib/location-options";
@@ -37,9 +51,6 @@ const initialEventForm = {
   isPotluck: false,
 };
 
-// Extract the src URL from a Google Maps iframe embed snippet.
-// If the user pastes a full <iframe> tag, pull out the src attribute value.
-// If they paste a bare URL, return it as-is.
 function extractMapEmbedSrc(value: string): string {
   const trimmed = value.trim();
   if (trimmed.startsWith("<iframe")) {
@@ -49,7 +60,6 @@ function extractMapEmbedSrc(value: string): string {
   return trimmed;
 }
 
-// Convert UTC ISO string to datetime-local value (local time)
 function isoToDatetimeLocal(iso: string) {
   const date = new Date(iso);
   const offset = date.getTimezoneOffset() * 60000;
@@ -74,6 +84,10 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
   const [groupState, setGroupState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
   const [eventState, setEventState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
 
+  // Create modals
+  const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+
   // Edit modal
   const [editingType, setEditingType] = useState<"event" | "group" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -82,17 +96,14 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
   const [editGroupForm, setEditGroupForm] = useState({ name: "" });
   const [editState, setEditState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
 
-  // Restore RSVP filter preference from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("rsvpFilter");
     if (stored === "mine" || stored === "all") setRsvpFilter(stored);
   }, []);
 
-  // Local state for live RSVP count updates
   const [localUpcoming, setLocalUpcoming] = useState(upcomingEvents);
   const [localTbd] = useState(tbdEvents);
 
-  // Event view mode
   const [viewMode, setViewMode] = useState<"list" | "week" | "month">("list");
 
   function handleRsvpChange(eventId: string, newStatus: RSVPStatus, hadPreviousRsvp: boolean) {
@@ -211,6 +222,7 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
       return;
     }
     setGroupForm(initialGroupForm);
+    setCreateGroupOpen(false);
     window.location.reload();
   }
 
@@ -242,6 +254,7 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
       return;
     }
     setEventForm({ ...initialEventForm, groupId: creatableGroups[0]?.id || "" });
+    setCreateEventOpen(false);
     window.location.reload();
   }
 
@@ -289,158 +302,309 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
         </section>
       ) : null}
 
-      {/* Hero */}
+      {/* Hero — compact, calendar-forward */}
       <section className="hero">
-        <div className="hero-copy">
-          <h1 className="hero-title">Where the crew<br />makes camp.</h1>
-          <p className="hero-sub">
-            Coordinate dates, collect RSVPs, and share calendars — no spreadsheets, no group texts.
-          </p>
+        <div className="hero-left">
+          <div className="hero-logo" aria-hidden="true">
+            <LogoMark size={48} color="var(--accent)" />
+          </div>
+          <div className="hero-copy">
+            <h1 className="hero-title">Where the crew makes camp.</h1>
+            <p className="hero-sub">
+              Coordinate dates, collect RSVPs, share calendars.
+            </p>
+          </div>
         </div>
-        <div className="hero-logo" aria-hidden="true">
-          <LogoMark size={120} color="var(--accent)" />
+        <div className="hero-actions">
+          <Button
+            variant="ghost"
+            onClick={() => setCreateGroupOpen(true)}
+          >
+            + New Group
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => setCreateEventOpen(true)}
+            disabled={creatableGroups.length === 0}
+            title={creatableGroups.length === 0 ? "Join or create a group first" : undefined}
+          >
+            + New Event
+          </Button>
         </div>
       </section>
 
       {/* Stats */}
       <section className="stats-grid">
-        <article className="stat-card">
-          <span>Groups</span>
-          <strong>{groups.length}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Upcoming events</span>
-          <strong>{localUpcoming.length}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Next meetup</span>
-          <strong suppressHydrationWarning>{nextMeetup ? formatDate(nextMeetup.arrivalDate) : "None scheduled"}</strong>
-        </article>
+        <Stat label="Groups" value={groups.length} />
+        <Stat label="Upcoming events" value={localUpcoming.length} />
+        <Stat
+          label="Next meetup"
+          value={nextMeetup ? formatDate(nextMeetup.arrivalDate) : "None scheduled"}
+          suppressHydrationWarning
+        />
       </section>
 
-      {/* Two-column layout */}
-      <div className="content-grid">
-        {/* Left column: create forms */}
-        <div className="stack">
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-label">Create group</p>
-                <h2>Set up a host group</h2>
-              </div>
-            </div>
-            <form className="form-grid" onSubmit={handleGroupSubmit}>
-              <label>
-                Group name
-                <input
-                  value={groupForm.name}
-                  onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Boilerhaus Camp Crew"
-                  required
-                />
-              </label>
-              {groupState.error ? <p className="form-error">{groupState.error}</p> : null}
-              <button type="submit" disabled={groupState.loading}>
-                {groupState.loading ? "Creating…" : "Create group"}
+      {/* ── PRIMARY: Events calendar ── */}
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <p className="panel-label">Upcoming events</p>
+            <h2>What&apos;s on the calendar</h2>
+          </div>
+          <div className="panel-controls">
+            <div className="view-toggle">
+              <button
+                type="button"
+                className={`view-btn ${viewMode === "list" ? "view-btn--active" : ""}`}
+                onClick={() => setViewMode("list")}
+              >
+                List
               </button>
-            </form>
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-label">Create event</p>
-                <h2>Schedule the next meetup</h2>
-              </div>
+              <button
+                type="button"
+                className={`view-btn ${viewMode === "week" ? "view-btn--active" : ""}`}
+                onClick={() => setViewMode("week")}
+              >
+                Week
+              </button>
+              <button
+                type="button"
+                className={`view-btn ${viewMode === "month" ? "view-btn--active" : ""}`}
+                onClick={() => setViewMode("month")}
+              >
+                Month
+              </button>
             </div>
-            <form className="form-grid" onSubmit={handleEventSubmit}>
-              <label>
-                Group
-                <select
-                  value={eventForm.groupId}
-                  onChange={(e) => setEventForm((f) => ({ ...f, groupId: e.target.value }))}
-                  disabled={creatableGroups.length === 0}
-                  required
-                >
-                  <option value="">Select a group</option>
-                  {creatableGroups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-                {creatableGroups.length === 0 ? (
-                  <span className="field-hint">
-                    Join a group first, or create one of your own, before posting an event.
-                  </span>
-                ) : (
-                  <span className="field-hint">
-                    Only groups you&apos;ve joined can be used for new events.
-                  </span>
-                )}
-              </label>
-              <label>
-                Event title
-                <input
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="Friday campfire set"
-                  required
-                />
-              </label>
-              <label>
-                Description
-                <textarea
-                  value={eventForm.description}
-                  onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Casual acoustic set and shared snacks."
-                  rows={2}
-                />
-              </label>
-              <label>
-                Location
-                <input
-                  value={eventForm.location}
-                  onChange={(e) => setEventForm((f) => ({ ...f, location: e.target.value }))}
-                  placeholder="North Grove"
-                />
-              </label>
-              <label>
-                Location vote options
-                <input
-                  value={eventForm.locationOptions}
-                  onChange={(e) => setEventForm((f) => ({ ...f, locationOptions: e.target.value }))}
-                  placeholder="Turtle Dunes, Pine Ridge, North Grove"
-                />
-                <span className="field-hint">Optional. Separate options with commas. Leave the Location field blank if you want the group to vote.</span>
-              </label>
-              <label>
-                Map link
-                <input
-                  type="url"
-                  value={eventForm.mapLink}
-                  onChange={(e) => setEventForm((f) => ({ ...f, mapLink: e.target.value }))}
-                  placeholder="https://maps.google.com/…"
-                />
-              </label>
-              <label>
-                Map embed
-                <input
-                  type="text"
-                  value={eventForm.mapEmbed}
-                  onChange={(e) =>
-                    setEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
-                  }
-                  placeholder="Paste the Google Maps embed code or src= URL"
-                />
-                <span className="field-hint">Google Maps → Share → Embed a map → paste the full embed code or just the src= URL</span>
-              </label>
-              <div className="date-grid">
-                <DatePicker
-                  label="Arrival"
-                  value={eventForm.arrivalDate}
-                  onChange={(v) => setEventForm((f) => ({ ...f, arrivalDate: v }))}
-                  placeholder="TBD — leave blank to vote later"
-                />
-                <label>
+            <div className="view-toggle">
+              <button
+                type="button"
+                className={`view-btn ${rsvpFilter === "all" ? "view-btn--active" : ""}`}
+                onClick={() => {
+                  setRsvpFilter("all");
+                  localStorage.setItem("rsvpFilter", "all");
+                }}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`view-btn ${rsvpFilter === "mine" ? "view-btn--active" : ""}`}
+                onClick={() => {
+                  setRsvpFilter("mine");
+                  localStorage.setItem("rsvpFilter", "mine");
+                }}
+              >
+                My RSVPs
+              </button>
+            </div>
+            {scheduledUpcoming.length > 0 ? (
+              <CalendarExportButton href="/api/events/ics" label="Export all events" />
+            ) : null}
+          </div>
+        </div>
+
+        {scheduledUpcoming.length === 0 ? (
+          <div className="empty-state-with-action">
+            <p className="empty-state">
+              {locationVoteEvents.length > 0
+                ? "Confirmed dates are waiting on location votes."
+                : rsvpFilter === "mine"
+                ? "No events you've responded to yet."
+                : "No confirmed events yet."}
+            </p>
+            {rsvpFilter !== "mine" && creatableGroups.length > 0 ? (
+              <Button variant="primary" onClick={() => setCreateEventOpen(true)}>
+                + Schedule the first event
+              </Button>
+            ) : null}
+          </div>
+        ) : viewMode === "list" ? (
+          <div className="event-list">
+            {scheduledUpcoming.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event as EventCardEvent}
+                userId={userId}
+                onEdit={() => openEditEvent(event)}
+                onDelete={() => handleDeleteEvent(event.id)}
+                onRsvpChange={(s, had) => handleRsvpChange(event.id, s, had)}
+              />
+            ))}
+          </div>
+        ) : viewMode === "week" ? (
+          <WeekView events={scheduledEvents} />
+        ) : (
+          <MonthView events={monthEvents} />
+        )}
+      </section>
+
+      {/* TBD events */}
+      {localTbd.length > 0 ? (
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="panel-label">Needs a date</p>
+              <h2>Vote on when to go</h2>
+            </div>
+          </div>
+          <div className="event-list">
+            {localTbd.map((event) => (
+              <TbdEventCard
+                key={event.id}
+                event={event as TbdEventCardEvent}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Location vote events */}
+      {locationVoteEvents.length > 0 ? (
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <p className="panel-label">Needs a location</p>
+              <h2>Vote on where to go</h2>
+            </div>
+          </div>
+          <div className="event-list">
+            {locationVoteEvents.map((event) => (
+              <LocationVoteCard
+                key={event.id}
+                event={event as LocationVoteCardEvent}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Groups */}
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <p className="panel-label">Groups</p>
+            <h2>Current meetup hosts</h2>
+          </div>
+          <Button variant="ghost" onClick={() => setCreateGroupOpen(true)}>
+            + New Group
+          </Button>
+        </div>
+        {groups.length === 0 ? (
+          <p className="empty-state">No groups yet.</p>
+        ) : (
+          <div className="group-list">
+            {groups.map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                userId={userId}
+                onEdit={() => openEditGroup(group)}
+                onDelete={() => handleDeleteGroup(group.id)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Create Event Modal ── */}
+      <Dialog open={createEventOpen} onOpenChange={setCreateEventOpen}>
+        <DialogContent>
+          <DialogTitle>
+            <span className="modal-label">New event</span>
+            Schedule the next meetup
+          </DialogTitle>
+          <form className="form-grid" onSubmit={handleEventSubmit}>
+            <div className="field">
+              <Label htmlFor="ce-group">Group</Label>
+              <select
+                id="ce-group"
+                className="native-select"
+                value={eventForm.groupId}
+                onChange={(e) => setEventForm((f) => ({ ...f, groupId: e.target.value }))}
+                disabled={creatableGroups.length === 0}
+                required
+              >
+                <option value="">Select a group</option>
+                {creatableGroups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <span className="field-hint">
+                {creatableGroups.length === 0
+                  ? "Join a group first, or create one of your own, before posting an event."
+                  : "Only groups you've joined can be used for new events."}
+              </span>
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-title" required>Event title</Label>
+              <Input
+                id="ce-title"
+                value={eventForm.title}
+                onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="Friday campfire set"
+                required
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-desc">Description</Label>
+              <Textarea
+                id="ce-desc"
+                value={eventForm.description}
+                onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Casual acoustic set and shared snacks."
+                rows={2}
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-location">Location</Label>
+              <Input
+                id="ce-location"
+                value={eventForm.location}
+                onChange={(e) => setEventForm((f) => ({ ...f, location: e.target.value }))}
+                placeholder="North Grove"
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-locopts">Location vote options</Label>
+              <Input
+                id="ce-locopts"
+                value={eventForm.locationOptions}
+                onChange={(e) => setEventForm((f) => ({ ...f, locationOptions: e.target.value }))}
+                placeholder="Turtle Dunes, Pine Ridge, North Grove"
+                helperText="Optional. Separate with commas. Leave Location blank if the group should vote."
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-maplink">Map link</Label>
+              <Input
+                id="ce-maplink"
+                type="url"
+                value={eventForm.mapLink}
+                onChange={(e) => setEventForm((f) => ({ ...f, mapLink: e.target.value }))}
+                placeholder="https://maps.google.com/…"
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ce-mapembed">Map embed</Label>
+              <Input
+                id="ce-mapembed"
+                value={eventForm.mapEmbed}
+                onChange={(e) =>
+                  setEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
+                }
+                placeholder="Paste Google Maps embed code or src= URL"
+                helperText="Google Maps → Share → Embed a map → paste the full code or just the src= URL"
+              />
+            </div>
+            <div className="date-grid">
+              <DatePicker
+                label="Arrival"
+                value={eventForm.arrivalDate}
+                onChange={(v) => setEventForm((f) => ({ ...f, arrivalDate: v }))}
+                placeholder="TBD — leave blank to vote later"
+              />
+              <div className="field">
+                <Label htmlFor="ce-nights">
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                     How many nights?
                     <Tooltip
@@ -448,324 +612,221 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
                       position="top"
                       maxWidth={240}
                     >
-                      <span aria-label="Help" style={{ cursor: "help", fontSize: "0.8rem", color: "#8a847a", lineHeight: 1 }}>ⓘ</span>
+                      <span aria-label="Help" style={{ cursor: "help", fontSize: "0.8rem", color: "var(--text-dim)", lineHeight: 1 }}>ⓘ</span>
                     </Tooltip>
                   </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={eventForm.nights}
-                    onChange={(e) => setEventForm((f) => ({ ...f, nights: e.target.value }))}
-                    placeholder="e.g. 3"
-                  />
-                </label>
-              </div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={eventForm.isPotluck}
-                  onChange={(e) => setEventForm((f) => ({ ...f, isPotluck: e.target.checked }))}
+                </Label>
+                <Input
+                  id="ce-nights"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={eventForm.nights}
+                  onChange={(e) => setEventForm((f) => ({ ...f, nights: e.target.value }))}
+                  placeholder="e.g. 3"
                 />
-                Potluck — everyone brings a dish
-              </label>
-              {eventState.error ? <p className="form-error">{eventState.error}</p> : null}
-              <button type="submit" disabled={eventState.loading || creatableGroups.length === 0}>
+              </div>
+            </div>
+            <div className="checkbox-row">
+              <Checkbox
+                id="ce-potluck"
+                checked={eventForm.isPotluck}
+                onCheckedChange={(v) => setEventForm((f) => ({ ...f, isPotluck: v === true }))}
+              />
+              <Label htmlFor="ce-potluck">Potluck — everyone brings a dish</Label>
+            </div>
+            {eventState.error ? <p className="form-error">{eventState.error}</p> : null}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" variant="primary" disabled={eventState.loading || creatableGroups.length === 0}>
                 {eventState.loading ? "Creating…" : "Create event"}
-              </button>
-            </form>
-          </section>
-        </div>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-        {/* Right column: events + groups */}
-        <div className="stack">
-          {/* Events panel */}
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-label">Upcoming events</p>
-                <h2>What&apos;s on the calendar</h2>
-              </div>
-              <div className="panel-controls">
-                <div className="view-toggle">
-                  <button
-                    type="button"
-                    className={`view-btn ${viewMode === "list" ? "view-btn--active" : ""}`}
-                    onClick={() => setViewMode("list")}
-                  >
-                    List
-                  </button>
-                  <button
-                    type="button"
-                    className={`view-btn ${viewMode === "week" ? "view-btn--active" : ""}`}
-                    onClick={() => setViewMode("week")}
-                  >
-                    Week
-                  </button>
-                  <button
-                    type="button"
-                    className={`view-btn ${viewMode === "month" ? "view-btn--active" : ""}`}
-                    onClick={() => setViewMode("month")}
-                  >
-                    Month
-                  </button>
-                </div>
-                <div className="view-toggle">
-                  <button
-                    type="button"
-                    className={`view-btn ${rsvpFilter === "all" ? "view-btn--active" : ""}`}
-                    onClick={() => {
-                      setRsvpFilter("all");
-                      localStorage.setItem("rsvpFilter", "all");
-                    }}
-                  >
-                    All
-                  </button>
-                  <button
-                    type="button"
-                    className={`view-btn ${rsvpFilter === "mine" ? "view-btn--active" : ""}`}
-                    onClick={() => {
-                      setRsvpFilter("mine");
-                      localStorage.setItem("rsvpFilter", "mine");
-                    }}
-                  >
-                    My RSVPs
-                  </button>
-                </div>
-                {scheduledUpcoming.length > 0 ? (
-                  <CalendarExportButton href="/api/events/ics" label="Export all events" />
-                ) : null}
-              </div>
+      {/* ── Create Group Modal ── */}
+      <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
+        <DialogContent>
+          <DialogTitle>
+            <span className="modal-label">New group</span>
+            Set up a host group
+          </DialogTitle>
+          <form className="form-grid" onSubmit={handleGroupSubmit}>
+            <div className="field">
+              <Label htmlFor="cg-name" required>Group name</Label>
+              <Input
+                id="cg-name"
+                value={groupForm.name}
+                onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Boilerhaus Camp Crew"
+                required
+                autoFocus
+              />
             </div>
+            {groupState.error ? <p className="form-error">{groupState.error}</p> : null}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" variant="primary" disabled={groupState.loading}>
+                {groupState.loading ? "Creating…" : "Create group"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            {scheduledUpcoming.length === 0 ? (
-              <p className="empty-state">
-                {locationVoteEvents.length > 0
-                  ? "Confirmed dates are waiting on location votes."
-                  : rsvpFilter === "mine"
-                  ? "No events you've responded to yet."
-                  : "No confirmed events yet."}
-              </p>
-            ) : viewMode === "list" ? (
-              <div className="event-list">
-                {scheduledUpcoming.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event as EventCardEvent}
-                    userId={userId}
-                    onEdit={() => openEditEvent(event)}
-                    onDelete={() => handleDeleteEvent(event.id)}
-                    onRsvpChange={(s, had) => handleRsvpChange(event.id, s, had)}
-                  />
-                ))}
-              </div>
-            ) : viewMode === "week" ? (
-              <WeekView events={scheduledEvents} />
-            ) : (
-              <MonthView events={monthEvents} />
-            )}
-          </section>
-
-          {/* TBD events panel */}
-          {localTbd.length > 0 ? (
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Needs a date</p>
-                  <h2>Vote on when to go</h2>
-                </div>
-              </div>
-              <div className="event-list">
-                {localTbd.map((event) => (
-                  <TbdEventCard
-                    key={event.id}
-                    event={event as TbdEventCardEvent}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {locationVoteEvents.length > 0 ? (
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-label">Needs a location</p>
-                  <h2>Vote on where to go</h2>
-                </div>
-              </div>
-              <div className="event-list">
-                {locationVoteEvents.map((event) => (
-                  <LocationVoteCard
-                    key={event.id}
-                    event={event as LocationVoteCardEvent}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {/* Groups panel */}
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-label">Groups</p>
-                <h2>Current meetup hosts</h2>
-              </div>
+      {/* ── Edit Event Modal ── */}
+      <Dialog open={editingType === "event" && editingId !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          <DialogTitle>
+            <span className="modal-label">Edit event</span>
+            Update event details
+          </DialogTitle>
+          <form className="form-grid" onSubmit={handleEditEventSubmit}>
+            <div className="field">
+              <Label htmlFor="ee-title" required>Event title</Label>
+              <Input
+                id="ee-title"
+                value={editEventForm.title}
+                onChange={(e) => setEditEventForm((f) => ({ ...f, title: e.target.value }))}
+                required
+              />
             </div>
-            {groups.length === 0 ? (
-              <p className="empty-state">No groups yet.</p>
-            ) : (
-              <div className="group-list">
-                {groups.map((group) => (
-                  <GroupCard
-                    key={group.id}
-                    group={group}
-                    userId={userId}
-                    onEdit={() => openEditGroup(group)}
-                    onDelete={() => handleDeleteGroup(group.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
-
-      {/* Edit event modal */}
-      {editingType === "event" && editingId !== null ? (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <p className="panel-label">Edit event</p>
-            <h2>Update event details</h2>
-            <form className="form-grid" onSubmit={handleEditEventSubmit}>
-              <label>
-                Event title
-                <input
-                  value={editEventForm.title}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, title: e.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Description
-                <textarea
-                  value={editEventForm.description}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                />
-              </label>
-              <label>
-                Location
-                <input
-                  value={editEventForm.location}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, location: e.target.value }))}
-                />
-              </label>
-              <label>
-                Location vote options
-                <input
-                  value={editEventForm.locationOptions}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, locationOptions: e.target.value }))}
-                  placeholder="Turtle Dunes, Pine Ridge, North Grove"
-                />
-                <span className="field-hint">Optional. Separate options with commas. Leave the Location field blank if you want the group to vote.</span>
-              </label>
-              <label>
-                Map link
-                <input
-                  type="url"
-                  value={editEventForm.mapLink}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, mapLink: e.target.value }))}
-                  placeholder="https://maps.google.com/…"
-                />
-              </label>
-              <label>
-                Map embed
-                <input
-                  type="text"
-                  value={editEventForm.mapEmbed}
-                  onChange={(e) =>
-                    setEditEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
-                  }
-                  placeholder="Paste the Google Maps embed code or src= URL"
-                />
-                <span className="field-hint">Google Maps → Share → Embed a map → paste the full embed code or just the src= URL</span>
-              </label>
-              <div className="date-grid">
-                <DatePicker
-                  label="Arrival"
-                  value={editEventForm.arrivalDate}
-                  onChange={(v) => setEditEventForm((f) => ({ ...f, arrivalDate: v }))}
-                  placeholder="TBD — leave blank to vote later"
-                />
-                <label>
+            <div className="field">
+              <Label htmlFor="ee-desc">Description</Label>
+              <Textarea
+                id="ee-desc"
+                value={editEventForm.description}
+                onChange={(e) => setEditEventForm((f) => ({ ...f, description: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ee-location">Location</Label>
+              <Input
+                id="ee-location"
+                value={editEventForm.location}
+                onChange={(e) => setEditEventForm((f) => ({ ...f, location: e.target.value }))}
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ee-locopts">Location vote options</Label>
+              <Input
+                id="ee-locopts"
+                value={editEventForm.locationOptions}
+                onChange={(e) => setEditEventForm((f) => ({ ...f, locationOptions: e.target.value }))}
+                placeholder="Turtle Dunes, Pine Ridge, North Grove"
+                helperText="Optional. Separate with commas. Leave Location blank if the group should vote."
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ee-maplink">Map link</Label>
+              <Input
+                id="ee-maplink"
+                type="url"
+                value={editEventForm.mapLink}
+                onChange={(e) => setEditEventForm((f) => ({ ...f, mapLink: e.target.value }))}
+                placeholder="https://maps.google.com/…"
+              />
+            </div>
+            <div className="field">
+              <Label htmlFor="ee-mapembed">Map embed</Label>
+              <Input
+                id="ee-mapembed"
+                value={editEventForm.mapEmbed}
+                onChange={(e) =>
+                  setEditEventForm((f) => ({ ...f, mapEmbed: extractMapEmbedSrc(e.target.value) }))
+                }
+                placeholder="Paste Google Maps embed code or src= URL"
+                helperText="Google Maps → Share → Embed a map → paste the full code or just the src= URL"
+              />
+            </div>
+            <div className="date-grid">
+              <DatePicker
+                label="Arrival"
+                value={editEventForm.arrivalDate}
+                onChange={(v) => setEditEventForm((f) => ({ ...f, arrivalDate: v }))}
+                placeholder="TBD — leave blank to vote later"
+              />
+              <div className="field">
+                <Label htmlFor="ee-nights">
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                     How many nights?
                     <Tooltip
-                      text="Departure date is calculated automatically as arrival + nights. Applies to each date proposal in the voting grid too."
+                      text="Departure date is calculated automatically as arrival + nights."
                       position="top"
                       maxWidth={240}
                     >
-                      <span aria-label="Help" style={{ cursor: "help", fontSize: "0.8rem", color: "#8a847a", lineHeight: 1 }}>ⓘ</span>
+                      <span aria-label="Help" style={{ cursor: "help", fontSize: "0.8rem", color: "var(--text-dim)", lineHeight: 1 }}>ⓘ</span>
                     </Tooltip>
                   </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={editEventForm.nights}
-                    onChange={(e) => setEditEventForm((f) => ({ ...f, nights: e.target.value }))}
-                    placeholder="e.g. 3"
-                  />
-                </label>
-              </div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={editEventForm.isPotluck}
-                  onChange={(e) => setEditEventForm((f) => ({ ...f, isPotluck: e.target.checked }))}
+                </Label>
+                <Input
+                  id="ee-nights"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={editEventForm.nights}
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, nights: e.target.value }))}
+                  placeholder="e.g. 3"
                 />
-                Potluck — everyone brings a dish
-              </label>
-              {editState.error ? <p className="form-error">{editState.error}</p> : null}
-              <div className="modal-actions">
-                <button type="button" className="btn-ghost" onClick={closeModal}>Cancel</button>
-                <button type="submit" disabled={editState.loading}>
-                  {editState.loading ? "Saving…" : "Save changes"}
-                </button>
               </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+            </div>
+            <div className="checkbox-row">
+              <Checkbox
+                id="ee-potluck"
+                checked={editEventForm.isPotluck}
+                onCheckedChange={(v) => setEditEventForm((f) => ({ ...f, isPotluck: v === true }))}
+              />
+              <Label htmlFor="ee-potluck">Potluck — everyone brings a dish</Label>
+            </div>
+            {editState.error ? <p className="form-error">{editState.error}</p> : null}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" variant="primary" disabled={editState.loading}>
+                {editState.loading ? "Saving…" : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Edit group modal */}
-      {editingType === "group" && editingId !== null ? (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <p className="panel-label">Edit group</p>
-            <h2>Rename group</h2>
-            <form className="form-grid" onSubmit={handleEditGroupSubmit}>
-              <label>
-                Group name
-                <input
-                  value={editGroupForm.name}
-                  onChange={(e) => setEditGroupForm({ name: e.target.value })}
-                  required
-                />
-              </label>
-              {editState.error ? <p className="form-error">{editState.error}</p> : null}
-              <div className="modal-actions">
-                <button type="button" className="btn-ghost" onClick={closeModal}>Cancel</button>
-                <button type="submit" disabled={editState.loading}>
-                  {editState.loading ? "Saving…" : "Save changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+      {/* ── Edit Group Modal ── */}
+      <Dialog open={editingType === "group" && editingId !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          <DialogTitle>
+            <span className="modal-label">Edit group</span>
+            Rename group
+          </DialogTitle>
+          <form className="form-grid" onSubmit={handleEditGroupSubmit}>
+            <div className="field">
+              <Label htmlFor="eg-name" required>Group name</Label>
+              <Input
+                id="eg-name"
+                value={editGroupForm.name}
+                onChange={(e) => setEditGroupForm({ name: e.target.value })}
+                required
+              />
+            </div>
+            {editState.error ? <p className="form-error">{editState.error}</p> : null}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" variant="primary" disabled={editState.loading}>
+                {editState.loading ? "Saving…" : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <style jsx>{`
         /* ── Hero ── */
@@ -773,56 +834,65 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
-          margin-bottom: 28px;
-          padding: 36px 36px;
+          gap: 16px;
+          margin-bottom: 20px;
+          padding: 20px 24px;
           border: 1px solid var(--border);
           border-radius: var(--radius-card);
           background: var(--bg-card);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          overflow: hidden;
+          flex-wrap: wrap;
         }
 
-        .hero-copy {
+        .hero-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
           flex: 1;
           min-width: 0;
         }
 
+        .hero-logo { flex-shrink: 0; opacity: 0.8; }
+        .hero-copy { min-width: 0; }
+
         .hero-title {
           font-family: var(--font-display);
-          font-size: clamp(1.8rem, 4vw, 2.8rem);
+          font-size: clamp(1.1rem, 2.5vw, 1.5rem);
           font-weight: 700;
           color: var(--text);
-          margin: 0 0 12px;
-          line-height: 1.1;
-          letter-spacing: -0.02em;
+          margin: 0 0 4px;
+          line-height: 1.15;
+          letter-spacing: -0.01em;
         }
 
         .hero-sub {
-          font-size: 1rem;
+          font-size: 0.85rem;
           color: var(--text-muted);
           margin: 0;
-          line-height: 1.6;
-          max-width: 440px;
+          line-height: 1.4;
         }
 
-        .hero-logo {
+        .hero-actions {
+          display: flex;
+          gap: 10px;
           flex-shrink: 0;
-          opacity: 0.75;
+          flex-wrap: wrap;
         }
 
         @media (max-width: 600px) {
-          .hero { padding: 24px 20px; gap: 16px; }
+          .hero { padding: 16px; }
           .hero-logo { display: none; }
+          .hero-actions { width: 100%; }
         }
 
+        /* ── Warning ── */
         .warning-card {
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           padding: 20px;
           border: 1px solid rgba(215, 185, 127, 0.35);
           border-radius: 20px;
-          background: rgba(13, 28, 23, 0.74);
+          background: var(--bg-card);
         }
 
         .warning-card pre {
@@ -833,52 +903,26 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           border-radius: 12px;
         }
 
+        /* ── Stats ── */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
+          gap: 12px;
+          margin-bottom: 16px;
         }
 
-        .stat-card {
-          border: 1px solid rgba(243, 235, 220, 0.12);
-          background: rgba(13, 28, 23, 0.74);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-          backdrop-filter: blur(10px);
-          border-radius: 20px;
-          padding: 20px;
+        @media (max-width: 640px) {
+          .stats-grid { grid-template-columns: 1fr 1fr; }
         }
 
-        .stat-card span {
-          display: block;
-          color: #c9c2b3;
-          margin-bottom: 8px;
-          font-size: 0.88rem;
-        }
-
-        .stat-card strong {
-          font-size: 1.4rem;
-        }
-
-        .content-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-          gap: 16px;
-          align-items: start;
-        }
-
-        .stack {
-          display: grid;
-          gap: 16px;
-        }
-
+        /* ── Panels ── */
         .panel {
-          border: 1px solid rgba(243, 235, 220, 0.12);
-          background: rgba(13, 28, 23, 0.74);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+          border: 1px solid var(--border);
+          background: var(--bg-card);
           backdrop-filter: blur(10px);
-          border-radius: 28px;
+          border-radius: var(--radius-card);
           padding: 24px;
+          margin-bottom: 16px;
         }
 
         .panel-heading {
@@ -892,14 +936,16 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
         .panel-label {
           text-transform: uppercase;
           letter-spacing: 0.12em;
-          font-size: 0.78rem;
-          color: #d7b97f;
-          margin: 0 0 6px;
+          font-size: 0.75rem;
+          color: var(--accent);
+          margin: 0 0 5px;
+          display: block;
         }
 
         h2 {
           margin: 0;
-          font-size: 1.2rem;
+          font-size: 1.15rem;
+          color: var(--text);
         }
 
         .panel-controls {
@@ -921,95 +967,95 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           font-family: inherit;
           font-size: 0.78rem;
           padding: 5px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(243, 235, 220, 0.2);
+          border-radius: var(--radius-pill);
+          border: 1px solid var(--border-strong);
           background: transparent;
-          color: #c9c2b3;
+          color: var(--text-muted);
           cursor: pointer;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
 
-        .view-btn:hover {
-          border-color: rgba(243, 235, 220, 0.4);
-          color: #f3ebdc;
-        }
+        .view-btn:hover { border-color: var(--accent); color: var(--text); }
 
         .view-btn--active {
-          background: rgba(215, 185, 127, 0.2);
-          border-color: #d7b97f;
-          color: #f4dcb0;
+          background: rgba(215, 185, 127, 0.18);
+          border-color: var(--accent);
+          color: var(--accent-hover);
         }
 
+        /* ── Empty state ── */
+        .empty-state {
+          color: var(--text-dim);
+          margin: 0;
+          font-size: 0.9rem;
+        }
+
+        .empty-state-with-action {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        /* ── Event / group lists ── */
+        .event-list,
+        .group-list {
+          display: grid;
+          gap: 12px;
+        }
+
+        /* ── Forms (inside boilerhaus-ui Dialog) ── */
         .form-grid {
           display: grid;
           gap: 14px;
         }
 
-        label {
+        /* Labelled field wrapper — stacks Label + Input vertically */
+        .field {
           display: grid;
-          gap: 8px;
-          font-size: 0.95rem;
-          color: #e6dfd0;
+          gap: 6px;
+        }
+
+        /* Native <select> styled to match boilerhaus-ui Input */
+        .native-select {
+          width: 100%;
+          font: inherit;
+          font-size: 0.9rem;
+          border: 1px solid var(--border-strong);
+          border-radius: var(--radius-input);
+          background: var(--bg-input);
+          color: var(--text);
+          padding: 10px 14px;
+          transition: border-color 0.15s;
+          appearance: auto;
+        }
+
+        .native-select:focus {
+          outline: none;
+          border-color: var(--border-focus);
         }
 
         .field-hint {
           font-size: 0.8rem;
-          color: #8a847a;
+          color: var(--text-dim);
         }
 
-        input,
-        select,
-        textarea,
-        button,
-        a {
-          font: inherit;
+        /* boilerhaus-ui Checkbox + Label row */
+        .checkbox-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
-        input,
-        select,
-        textarea {
-          width: 100%;
-          border: 1px solid rgba(243, 235, 220, 0.14);
-          border-radius: 16px;
-          background: rgba(5, 11, 9, 0.5);
-          color: #f3ebdc;
-          padding: 12px 14px;
-        }
-
-        textarea {
-          resize: vertical;
-        }
-
-        button[type="submit"],
-        button[type="button"]:not(.view-btn):not(.btn-ghost) {
-          border: 0;
-          border-radius: 999px;
-          padding: 14px 18px;
-          background: linear-gradient(135deg, #d7b97f, #b98545);
-          color: #10231d;
-          font-weight: 700;
-          cursor: pointer;
-          width: 100%;
-        }
-
-        button:disabled {
-          cursor: wait;
-          opacity: 0.7;
-        }
-
-        .btn-ghost {
-          background: transparent;
-          border: 1px solid rgba(243, 235, 220, 0.2);
-          color: #c9c2b3;
+        /* Modal sub-label (e.g. "New event") above DialogTitle */
+        .modal-label {
+          display: block;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-size: 0.72rem;
+          color: var(--accent);
+          margin-bottom: 4px;
           font-weight: 400;
-          padding: 14px 18px;
-          border-radius: 999px;
-          cursor: pointer;
-          width: 100%;
-        }
-
-        .btn-ghost:hover {
-          border-color: rgba(243, 235, 220, 0.4);
-          color: #f3ebdc;
         }
 
         .date-grid {
@@ -1018,89 +1064,14 @@ export default function Home({ databaseReady, databaseMessage, groups, upcomingE
           gap: 12px;
         }
 
-        .event-list,
-        .group-list {
-          display: grid;
-          gap: 12px;
-        }
-
-        .empty-state {
-          color: #8a847a;
-          margin: 0;
-          font-size: 0.9rem;
-        }
-
         .form-error {
-          color: #f0a090;
+          color: var(--color-error);
           margin: 0;
           font-size: 0.9rem;
         }
 
-        .checkbox-label {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 0.95rem;
-          color: #e6dfd0;
-          cursor: pointer;
-        }
-
-        .checkbox-label input[type="checkbox"] {
-          width: auto;
-          accent-color: #d7b97f;
-          cursor: pointer;
-        }
-
-        /* Modal */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          z-index: 100;
-        }
-
-        .modal {
-          width: 100%;
-          max-width: 540px;
-          max-height: 90vh;
-          overflow-y: auto;
-          border: 1px solid rgba(243, 235, 220, 0.12);
-          background: #0d1c17;
-          box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
-          border-radius: 28px;
-          padding: 32px;
-        }
-
-        .modal h2 {
-          margin-bottom: 20px;
-        }
-
-        .modal-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
-        @media (max-width: 1024px) {
-          .content-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .date-grid,
-          .modal-actions {
-            grid-template-columns: 1fr;
-          }
+        @media (max-width: 480px) {
+          .date-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </AppShell>

@@ -1,8 +1,38 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Tailwind v4 base ── */
+@import "tailwindcss";
 
-/* ── Brand tokens ──────────────────────────────────────────────────── */
+/* Scan boilerhaus-ui dist so its utility classes are included in the output */
+@source "../node_modules/@boilerhaus-ui/boilerhaus-ui/dist";
+
+/* Import boilerhaus-ui design token definitions (@theme blocks) */
+@import "@boilerhaus-ui/boilerhaus-ui/tokens.css";
+
+/* ──────────────────────────────────────────────────────────────
+   Mossy Meetups theme overrides
+   These @theme entries override the Bauhaus defaults imported above,
+   bending the boilerhaus-ui component palette to match Mossy Meetups.
+   ────────────────────────────────────────────────────────────── */
+@theme {
+  /* CTAs: amber/gold instead of Bauhaus signal-red */
+  --color-signal:      #D97706;
+  --color-signal-alt:  #2E7D32; /* forest green replaces Bauhaus blue */
+
+  /* Surface & text (light-mode defaults — dark mode overridden in [data-theme="dark"] below) */
+  --color-paper:       #F3F6F1;
+  --color-void:        #1A1A18;
+  --color-smoke:       #5B5B58;
+  --color-rule:        rgba(26, 26, 24, 0.12);
+  --color-ash:         #e8ede6;
+
+  /* Success / growth */
+  --color-growth:      #6A9A4F;
+
+  /* Typography — Mossy display + body fonts */
+  --font-family-display: var(--font-fraunces, Georgia, 'Times New Roman', serif);
+  --font-family-body:    var(--font-inter, system-ui, -apple-system, sans-serif);
+}
+
+/* ── Brand tokens (Mossy Meetups semantic CSS vars used by styled-jsx) ── */
 :root {
   /* Raw palette */
   --color-base:        #F3F6F1;
@@ -45,9 +75,16 @@
   --radius-pill:  999px;
   --radius-input: 16px;
   --radius-sm:    10px;
+
+  /* boilerhaus-ui dark-mode surface overrides for components */
+  --color-paper: #10231d;
+  --color-void:  #f3ebdc;
+  --color-smoke: #c9c2b3;
+  --color-rule:  rgba(243, 235, 220, 0.12);
+  --color-ash:   #0d1c17;
 }
 
-/* ── Light theme overrides ─────────────────────────────────────────── */
+/* ── Light theme ── */
 [data-theme="light"] {
   --bg:             #F3F6F1;
   --bg-gradient:    none;
@@ -67,9 +104,16 @@
   --shadow-nav:     0 1px 0 rgba(0, 0, 0, 0.06);
   --color-error:    #c0392b;
   --color-success:  #2E7D32;
+
+  /* boilerhaus-ui light-mode surface overrides */
+  --color-paper: #F3F6F1;
+  --color-void:  #1A1A18;
+  --color-smoke: #5B5B58;
+  --color-rule:  rgba(26, 26, 24, 0.12);
+  --color-ash:   #e8ede6;
 }
 
-/* ── Global base styles ────────────────────────────────────────────── */
+/* ── Global base styles ── */
 *,
 *::before,
 *::after {
@@ -88,7 +132,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Focus ring ────────────────────────────────────────────────────── */
+/* ── Focus ring ── */
 :focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
