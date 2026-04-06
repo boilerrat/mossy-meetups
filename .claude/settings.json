@@ -10,7 +10,8 @@
       "Bash(git stash:*)",
       "Bash(npm view:*)",
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('next:', p.dependencies.next, 'react:', p.dependencies.react\\)\")",
-      "Bash(ls /home/boilerrat/mossy-meetups/next.config*)"
+      "Bash(ls /home/boilerrat/mossy-meetups/next.config*)",
+      "Bash(git commit:*)"
     ]
   }
 }
