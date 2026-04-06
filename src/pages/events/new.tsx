@@ -265,7 +265,7 @@ export default function NewEventPage({ groups, sidebarGroups }: Props) {
               <Button asChild variant="ghost">
                 <Link href="/">Cancel</Link>
               </Button>
-              <Button type="submit" variant="primary" disabled={state.loading}>
+              <Button type="submit" variant="secondary" disabled={state.loading}>
                 {state.loading ? "Creating…" : "Create event"}
               </Button>
             </div>
