@@ -246,7 +246,6 @@ export default function EventPage({
                 <CalendarExportButton
                   href={`/api/events/${event.id}/ics`}
                   label="Add to calendar"
-                  fullWidth
                 />
               </div>
             ) : null}
